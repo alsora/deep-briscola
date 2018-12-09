@@ -82,11 +82,9 @@ class BriscolaDeck:
 
         if len(self.current_deck) == 0:
             if self.briscola:
-                print ("DRAW -----> BRISCOLA")
                 drawn_card = self.briscola
                 self.briscola = None
             else:
-                print ("TRY TO DRAW BUT DECK EMPTY")
                 return None
         else:
             available_cards_id = list(range(0, self.get_current_deck_size()))
@@ -210,44 +208,23 @@ class BriscolaGame:
     def play_step(self, action, player_id):
 
         player = self.players[player_id]
-        print ("PLAYER: ", player_id, "HAND: ", [card.name for card in player.hand])
-        print ("ACTION---->", action)
+
         card_id = player.play_card(action)
         if card_id is None:
             print ("PLAY_CARD IS NONE!!!!!------------------")
         card = self.deck.get_card(card_id)
-        print("Played card: ", card.name)
 
+        # this is shallow copied into self.turn, so I only have to update once
         self.played_cards.append(card)
-        #self.turn_state['played_cards'].append(card)
 
 
     def evaluate_step(self):
-
-        '''
-        winner_player_id = self.players_order[0]
-        strongest_card = self.played_cards[0]
-
-        for ordered_player_id, card in enumerate(self.played_cards[1:]):
-            pair_winner = self.scoring(strongest_card, card)
-            if pair_winner is 1:
-                winner_player_id = self.players_order[ordered_player_id + 1]
-                strongest_card = card
-        print("ordered_winner->", ordered_player_id , " + 1 = ", ordered_player_id + 1)
-
-        '''
-
-        print ("eVAluate cards: ", [card.name for card in self.played_cards])
 
         ordered_winner_id, strongest_card = self.get_strongest_card(self.briscola_seed, self.played_cards)
         winner_player_id = self.players_order[ordered_winner_id]
 
         points = sum([card.points for card in self.played_cards])
-        print ("players order ", self.players_order)
         winner_player = self.players[winner_player_id]
-
-        print ("Winner player ", winner_player_id, " with ", strongest_card.name)
-        print ("Points: ", points)
 
         self.update_game(winner_player, points)
 
@@ -288,13 +265,10 @@ class BriscolaGame:
 
     def end_game(self):
 
-        print ("End game!")
-
         winner_player_id = -1
         winner_points = -1
 
         for player in self.players:
-            print("Player ", player.id, " made ", player.points, " points")
             if player.points > winner_points:
                 winner_player_id = player.id
                 winner_points = player.points

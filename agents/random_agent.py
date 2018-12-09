@@ -6,10 +6,7 @@ class RandomAgent:
     def __init__(self):
         self.observed_state = {}
 
-    def observe_game_state(self, game = None, deck = None):
-        pass
-
-    def observe_player_state(self, player = None, deck = None):
+    def observe(self, game, player, deck):
         pass
 
     def select_action(self, actions):

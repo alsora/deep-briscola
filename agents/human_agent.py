@@ -6,13 +6,12 @@ class HumanAgent:
     def __init__(self):
         self.observed_state = {}
 
-    def observe_game_state(self, game):
-        self.observed_state['turn_state'] = game.get_turn_state()
-        self.observed_state['briscola'] = game.briscola
-        self.observed_state['briscola_seed'] = game.briscola_seed
-
-    def observe_player_state(self, player):
+    def observe(self, game, player, deck):
         self.observed_state['hand'] = player.get_player_state()
+        self.observed_state['turn_state'] = game.get_turn_state()
+        self.observed_state['briscola_seed'] = game.briscola_seed
+        self.observed_state['briscola'] = game.briscola
+        self.observed_state['played_cards'] = self.observed_state['turn_state']['played_cards']
 
     def select_action(self, actions):
 

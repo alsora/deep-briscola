@@ -11,7 +11,8 @@ import environment as brisc
 
 def test(game, agents):
 
-    n_games = 1
+    deck = game.deck
+    n_games = 100
     total_wins = [0, 0]
     total_points = [0, 0]
 
@@ -27,8 +28,7 @@ def test(game, agents):
                 player = game.players[player_id]
                 agent = agents[player_id]
 
-                agent.observe_game_state(game, deck)
-                agent.observe_player_state(player, deck)
+                agent.observe(game, player, deck)
                 available_actions = game.get_player_actions(player_id)
                 action = agent.select_action(available_actions)
 
@@ -55,59 +55,68 @@ if __name__ == "__main__":
 
     # Initializing the environment
     game = brisc.BriscolaGame(  summary_turn= True)
+    deck = game.deck
 
     # Initialize agents
     agents = []
     agents.append(DeepAgent())
     agents.append(RandomAgent())
 
+
+    train_epochs = 50000
+    test_every = 2500
+
     # First reset of the environment
     game.reset()
 
-    while 1:
+    for epoch in range(0, train_epochs):
+        print ("Epoch: ", epoch)
+        game.reset()
 
-        deck = game.deck
-        players_order = game.get_players_order()
-        for player_id in players_order:
+        while 1:
 
-            player = game.players[player_id]
-            agent = agents[player_id]
+            # step
+            players_order = game.get_players_order()
+            for player_id in players_order:
 
-            agent.observe_game_state(game, deck)
-            agent.observe_player_state(player, deck)
-            available_actions = game.get_player_actions(player_id)
-            action = agent.select_action(available_actions)
+                player = game.players[player_id]
+                agent = agents[player_id]
 
-            game.play_step(action, player_id)
+                agent.observe(game, player, deck)
+                available_actions = game.get_player_actions(player_id)
+                action = agent.select_action(available_actions)
 
-
-        winner_player_id, points = game.evaluate_step()
-
-        # TODO: should update also after last hand
-        if not game.draw_step():
-            game_winner_id, winner_points = game.end_game()
-            break
-
-        for player_id in players_order:
-            player = game.players[player_id]
-            agent = agents[player_id]
-
-            agent.observe_game_state(game, deck)
-            agent.observe_player_state(player, deck)
-            available_actions = game.get_player_actions(player_id)
-
-            # compute reward function for this player
-            if player_id is winner_player_id:
-                reward = 2
-            else:
-                reward = -2
-            if points >= 10:
-                reward *= 2
-
-            agent.update(reward, available_actions)
+                game.play_step(action, player_id)
 
 
-    test(game, agents)
+            winner_player_id, points = game.evaluate_step()
 
+            # TODO: should update also after last hand
+            # update environment
+            if not game.draw_step():
+                game_winner_id, winner_points = game.end_game()
+                break
+
+            # update agents
+            for player_id in players_order:
+                player = game.players[player_id]
+                agent = agents[player_id]
+
+                agent.observe(game, player, deck)
+                available_actions = game.get_player_actions(player_id)
+
+                # compute reward function for this player
+                if player_id is winner_player_id:
+                    reward = 2
+                else:
+                    reward = -2
+                if points >= 10:
+                    reward *= 2
+
+                agent.update(reward, available_actions)
+
+
+        if epoch % test_every == 0:
+            test(game, agents)
 
 
