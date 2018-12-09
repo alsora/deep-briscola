@@ -26,7 +26,7 @@ class HumanAgent:
             print("Not a number")
             action = np.random.choice(actions)
 
-        if action > len(actions):
+        if action >= len(actions):
             print ("Error, selected out of bounds action!!")
             action = np.random.choice(actions)
 

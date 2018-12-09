@@ -57,7 +57,9 @@ RUN pip install \
   matplotlib \
   opencv-python
 
-
+RUN pip install gym
+RUN pip install PyOpenGL PyOpenGL-accelerate
+RUN apt-get install -y python3-pil python3-pil.imagetk
 #### SET ENVIRONMENTW
 
 RUN echo ' \n\

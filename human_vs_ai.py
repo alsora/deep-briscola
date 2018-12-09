@@ -8,6 +8,7 @@ from agents.random_agent import RandomAgent
 from agents.naive_agent import NaiveAgent
 from agents.human_agent import HumanAgent
 import environment as brisc
+from rendering import Visualizer
 
 
 
@@ -15,6 +16,9 @@ if __name__ == "__main__":
 
     # Initializing the environment
     game = brisc.BriscolaGame(  summary_turn= True)
+
+    visualizer = Visualizer()
+    #visualizer.create_deck(game.deck.deck)
 
     # Initialize agents
     agents = []
@@ -50,5 +54,3 @@ if __name__ == "__main__":
 
 
         winner, points = game.evaluate_step()
-
-        #reward: +points if win, -points if lose
