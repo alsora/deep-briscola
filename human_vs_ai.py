@@ -1,6 +1,6 @@
 import itertools, time, random
 import numpy as np
-
+import tensorflow as tf
 import sys
 from matplotlib import pyplot as plt
 
@@ -12,9 +12,16 @@ import environment as brisc
 from rendering import Visualizer
 
 
+# Parameters
+# ==================================================
 
+# Model directory
+tf.flags.DEFINE_string("model_dir", "", "Where to save the trained model, checkpoints and stats (default: pwd/runs/timestamp)")
 
-def main(argv):
+FLAGS = tf.flags.FLAGS
+
+def main(argv=None):
+
 
     # Initializing the environment
     game = brisc.BriscolaGame(brisc.LoggerLevels.DEBUG)
@@ -26,9 +33,14 @@ def main(argv):
     # Initialize agents
     agents = []
     agents.append(HumanAgent())
-    agents.append(DeepAgent())
 
-    agents[1].load_model()
+    if FLAGS.model_dir:
+        agent = DeepAgent()
+        agent.load_model(FLAGS.model_dir)
+        agents.append(agent)
+    else:
+        agent = NaiveAgent()
+        agents.append(agent)
 
     # First reset of the environment
     briscola = game.reset()
@@ -59,6 +71,6 @@ def main(argv):
 
 
 
-if __name__ == "__main__":
-    main(sys.argv)
+if __name__ == '__main__':
+    tf.app.run()
 

@@ -92,10 +92,10 @@ class DeepAgent:
                                     bias_initializer=b_initializer, name='e1')
             e2 = tf.layers.dense(e1, 32, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e2')
-            #e3 = tf.layers.dense(e2, 32, tf.nn.relu, kernel_initializer=w_initializer,
-            #                        bias_initializer=b_initializer, name='e3')
+            e3 = tf.layers.dense(e2, 32, tf.nn.relu, kernel_initializer=w_initializer,
+                                    bias_initializer=b_initializer, name='e3')
 
-            self.q_eval = tf.layers.dense(e2, self.n_actions, kernel_initializer=w_initializer,
+            self.q_eval = tf.layers.dense(e3, self.n_actions, kernel_initializer=w_initializer,
                                             bias_initializer=b_initializer, name='q1')
 
         # ------------------ build target_net ------------------
@@ -104,10 +104,10 @@ class DeepAgent:
                                     bias_initializer=b_initializer, name='t1')
             t2 = tf.layers.dense(t1, 32, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='t2')
-            #t3 = tf.layers.dense(t2, 32, tf.nn.relu, kernel_initializer=w_initializer,
-            #                        bias_initializer=b_initializer, name='t3')
+            t3 = tf.layers.dense(t2, 32, tf.nn.relu, kernel_initializer=w_initializer,
+                                    bias_initializer=b_initializer, name='t3')
 
-            self.q_next = tf.layers.dense(t2, self.n_actions, kernel_initializer=w_initializer,
+            self.q_next = tf.layers.dense(t3, self.n_actions, kernel_initializer=w_initializer,
                                             bias_initializer=b_initializer, name='q2')
 
         with tf.variable_scope('predictions'):

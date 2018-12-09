@@ -1,5 +1,6 @@
 import itertools, time, random
 import numpy as np
+import tensorflow as tf
 
 import sys
 from matplotlib import pyplot as plt
@@ -8,6 +9,15 @@ from agents.random_agent import RandomAgent
 from agents.deep_agent import DeepAgent
 import environment as brisc
 
+
+
+# Parameters
+# ==================================================
+
+# Model directory
+tf.flags.DEFINE_string("model_dir", "", "Where to save the trained model, checkpoints and stats (default: pwd/runs/timestamp)")
+
+FLAGS = tf.flags.FLAGS
 
 def test(game, agents):
 
@@ -53,12 +63,10 @@ def test(game, agents):
 
 
 
-
-
-if __name__ == "__main__":
+def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(  summary_turn= True)
+    game = brisc.BriscolaGame(  verbosity=brisc.LoggerLevels.TRAIN)
     deck = game.deck
 
     # Initialize agents
@@ -127,6 +135,9 @@ if __name__ == "__main__":
             winning_ratio = test(game, agents)
             if winning_ratio > best_winning_ratio:
                 best_winning_ratio = winning_ratio
-                agents[0].save_model()
+                agents[0].save_model(FLAGS.model_dir)
 
 
+
+if __name__ == '__main__':
+    tf.app.run()
