@@ -12,16 +12,17 @@ import environment as brisc
 def test(game, agents):
 
     deck = game.deck
-    n_games = 100
+    n_games = 250
     total_wins = [0, 0]
     total_points = [0, 0]
 
     for _ in range(n_games):
 
         game.reset()
+        keep_playing = True
 
-        while 1:
-            deck = game.deck
+        while keep_playing:
+
             players_order = game.get_players_order()
             for player_id in players_order:
 
@@ -36,16 +37,19 @@ def test(game, agents):
 
             winner_player_id, points = game.evaluate_step()
 
-            if not game.draw_step():
-                game_winner_id, winner_points = game.end_game()
+            keep_playing = game.draw_step()
 
-                total_wins[game_winner_id] += 1
-                total_points[game_winner_id] += winner_points
-                total_points[1 - game_winner_id] += (120 - winner_points)
-                break
+        game_winner_id, winner_points = game.end_game()
+
+        total_wins[game_winner_id] += 1
+        total_points[game_winner_id] += winner_points
+        total_points[1 - game_winner_id] += (120 - winner_points)
 
 
-    print("DeepAgent wins ", total_wins[0], "% with average points ", float(total_points[0])/float(n_games))
+    victory_rate = (total_wins[0]/float(n_games))*100
+    print("DeepAgent wins ", victory_rate, "% with average points ", float(total_points[0])/float(n_games))
+
+    return victory_rate
 
 
 
@@ -63,17 +67,20 @@ if __name__ == "__main__":
     agents.append(RandomAgent())
 
 
-    train_epochs = 50000
-    test_every = 2500
+    train_epochs = 20000
+    test_every = 1000
+    best_winning_ratio = -1
 
     # First reset of the environment
     game.reset()
 
     for epoch in range(0, train_epochs):
-        print ("Epoch: ", epoch)
+        print ("Epoch: ", epoch, end='\r')
+        print('', end='\r')
         game.reset()
+        keep_playing = True
 
-        while 1:
+        while keep_playing:
 
             # step
             players_order = game.get_players_order()
@@ -91,11 +98,8 @@ if __name__ == "__main__":
 
             winner_player_id, points = game.evaluate_step()
 
-            # TODO: should update also after last hand
             # update environment
-            if not game.draw_step():
-                game_winner_id, winner_points = game.end_game()
-                break
+            keep_playing = game.draw_step()
 
             # update agents
             for player_id in players_order:
@@ -107,16 +111,22 @@ if __name__ == "__main__":
 
                 # compute reward function for this player
                 if player_id is winner_player_id:
-                    reward = 2
-                else:
+                    reward = points
+                elif points >= 10:
                     reward = -2
-                if points >= 10:
-                    reward *= 2
+                else:
+                    reward = 0
 
                 agent.update(reward, available_actions)
 
+        game_winner_id, winner_points = game.end_game()
+
+        # here i should update the network according to game results
 
         if epoch % test_every == 0:
-            test(game, agents)
+            winning_ratio = test(game, agents)
+            if winning_ratio > best_winning_ratio:
+                best_winning_ratio = winning_ratio
+                agents[0].save_model()
 
 

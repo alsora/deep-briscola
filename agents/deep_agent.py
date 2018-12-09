@@ -1,14 +1,15 @@
 import numpy as np
 import tensorflow as tf
-import itertools, time, random, os
+import itertools, time, random, os, shutil
+
 
 __ACTIONS__ = [0, 1, 2]
 
 class ReplayMemory:
 
-    def __init__(self,capacity):
+    def __init__(self, capacity, features):
 
-        n_features = 120
+        n_features = features
         # initialize zero memory [s, a, r, s_]
         self.capacity = capacity
         self.memory = np.zeros((self.capacity, n_features * 2 + 2))
@@ -45,13 +46,17 @@ class DeepAgent:
         self.session = None
         self.learn_step_counter = 0
         self.learning_rate = 1e-3
+        self.n_features = 40
+        self.n_actions = 3
+        self.batch_size = 100
+        self.replace_target_iter = 500
 
         self.state = None
         self.state_ = None
         self.action = None
         self.reward = None
 
-        self.replay_memory = ReplayMemory(10000)
+        self.replay_memory = ReplayMemory(10000, self.n_features)
         self.create_network()
         self.initialize_session()
 
@@ -73,9 +78,6 @@ class DeepAgent:
 
     def create_network(self):
 
-        self.n_features = 120
-        self.n_actions = 3
-
         # ------------------ all inputs ------------------------
         self.s = tf.placeholder(tf.float32, [None, self.n_features], name='states')  # input State
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
@@ -86,26 +88,26 @@ class DeepAgent:
 
         # ------------------ build evaluate_net ------------------
         with tf.variable_scope('eval_net'):
-            e1 = tf.layers.dense(self.s, 512, tf.nn.relu, kernel_initializer=w_initializer,
+            e1 = tf.layers.dense(self.s, 128, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e1')
-            e2 = tf.layers.dense(e1, 128, tf.nn.relu, kernel_initializer=w_initializer,
+            e2 = tf.layers.dense(e1, 32, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e2')
-            e3 = tf.layers.dense(e2, 32, tf.nn.relu, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e3')
+            #e3 = tf.layers.dense(e2, 32, tf.nn.relu, kernel_initializer=w_initializer,
+            #                        bias_initializer=b_initializer, name='e3')
 
-            self.q_eval = tf.layers.dense(e3, self.n_actions, kernel_initializer=w_initializer,
+            self.q_eval = tf.layers.dense(e2, self.n_actions, kernel_initializer=w_initializer,
                                             bias_initializer=b_initializer, name='q1')
 
         # ------------------ build target_net ------------------
         with tf.variable_scope('target_net'):
-            t1 = tf.layers.dense(self.s_, 512, tf.nn.relu, kernel_initializer=w_initializer,
+            t1 = tf.layers.dense(self.s_, 128, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='t1')
-            t2 = tf.layers.dense(t1, 128, tf.nn.relu, kernel_initializer=w_initializer,
+            t2 = tf.layers.dense(t1, 32, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='t2')
-            t3 = tf.layers.dense(t2, 32, tf.nn.relu, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t3')
+            #t3 = tf.layers.dense(t2, 32, tf.nn.relu, kernel_initializer=w_initializer,
+            #                        bias_initializer=b_initializer, name='t3')
 
-            self.q_next = tf.layers.dense(t3, self.n_actions, kernel_initializer=w_initializer,
+            self.q_next = tf.layers.dense(t2, self.n_actions, kernel_initializer=w_initializer,
                                             bias_initializer=b_initializer, name='q2')
 
         with tf.variable_scope('predictions'):
@@ -143,25 +145,14 @@ class DeepAgent:
         briscola_one_hot = np.array(self.observed_state['briscola_one_hot'])
         played_cards_one_hot = np.array(self.observed_state['played_cards_one_hot'])
 
-        state = np.concatenate((hand_one_hot, played_cards_one_hot), axis=0)
-        state = np.concatenate((state, briscola_one_hot), axis=0)
+        #state = np.concatenate((hand_one_hot, played_cards_one_hot), axis=0)
+        #state = np.concatenate((state, briscola_one_hot), axis=0)
+
+        state = hand_one_hot + 2*briscola_one_hot - 1*played_cards_one_hot
+
 
         self.last_state = self.state
         self.state = state
-
-
-
-    def get_state(self):
-
-        hand_one_hot = np.array(self.observed_state['hand_one_hot'])
-        briscola_one_hot = np.array(self.observed_state['briscola_one_hot'])
-        played_cards_one_hot = np.array(self.observed_state['played_cards_one_hot'])
-
-        state = np.concatenate((hand_one_hot, played_cards_one_hot), axis=0)
-        state = np.concatenate((state, briscola_one_hot), axis=0)
-        state = np.expand_dims(state, axis=0)
-
-        return state
 
 
     def select_action(self, actions):
@@ -187,41 +178,57 @@ class DeepAgent:
         return action
 
 
-    def forward_pass(self, states):
-        pass
-
-
     def update(self, reward, available_actions):
-
-        batch_size = 100
-        n_features = 120
-        self.replace_target_iter = 300
 
         self.reward = reward
 
         self.replay_memory.push(self.last_state, self.action, self.reward, self.state)
 
-        if self.replay_memory.size() < batch_size:
+        if self.replay_memory.size() < self.batch_size:
             return
 
         # check to replace target parameters
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.session.run(self.target_replace_op)
-            print('\ntarget_params_replaced\n')
+            #print('\ntarget_params_replaced\n')
 
-        batch_memory = self.replay_memory.sample(batch_size)
+        batch_memory = self.replay_memory.sample(self.batch_size)
 
         _, cost = self.session.run(
             [self._train_op, self.loss],
             feed_dict={
-                self.s: batch_memory[:, : n_features],
-                self.a: batch_memory[:, n_features],
-                self.r: batch_memory[:, n_features + 1],
-                self.s_: batch_memory[:, -n_features:],
+                self.s: batch_memory[:, : self.n_features],
+                self.a: batch_memory[:, self.n_features],
+                self.r: batch_memory[:, self.n_features + 1],
+                self.s_: batch_memory[:, -self.n_features:],
         })
 
         #self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
 
 
+
+    def save_model(self, output_dir = ''):
+
+        if not output_dir:
+            output_dir = 'saved_model'
+
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+
+        builder = tf.saved_model.builder.SavedModelBuilder(output_dir)
+        builder.add_meta_graph_and_variables(
+            self.session,
+            [tf.saved_model.tag_constants.SERVING],
+            clear_devices=True)
+
+        builder.save()
+
+
+    def load_model(self, saved_model_dir = ''):
+
+        if not saved_model_dir:
+            saved_model_dir = 'saved_model'
+
+        tf.saved_model.loader.load(self.session, [tf.saved_model.tag_constants.SERVING], saved_model_dir)
 

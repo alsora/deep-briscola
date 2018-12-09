@@ -1,5 +1,6 @@
 import itertools, time, random
 import numpy as np
+from enum import Enum
 
 from errors_classes import CardsFinished,InvalidAction,PlayerIdError, DrawingProblem
 
@@ -8,6 +9,12 @@ points = [11,0,10,0,0,0,0,2,3,4]
 strengths = [10,1,9,2,3,4,5,6,7,8]
 seeds = ['Spade','Coppe','Denari','Bastoni']
 names = ['Asso', 'Due', 'Tre', 'Quattro', 'Cinque', 'Sei', 'Sette', 'Fante', 'Cavallo', 'Re']
+
+class LoggerLevels(Enum):
+    DEBUG = 0
+    PVP = 1
+    TEST = 2
+    TRAIN = 3
 
 class Card:
 
@@ -147,9 +154,28 @@ class BriscolaPlayer:
 
 class BriscolaGame:
 
-    def __init__(self, summary_turn):
-          self.summary_turn = summary_turn
-          self.deck = BriscolaDeck()
+    def __init__(self, verbosity):
+        self.deck = BriscolaDeck()
+        self.configure_logger(verbosity)
+
+
+    def configure_logger(self, verbosity):
+
+        if verbosity.value > LoggerLevels.DEBUG.value:
+            self.DEBUG_logger = lambda *args: None
+        else:
+            self.DEBUG_logger = print
+
+        if verbosity.value > LoggerLevels.PVP.value:
+            self.PVP_logger = lambda *args: None
+        else:
+            self.PVP_logger = print
+
+        self.TEST_logger = print
+        self.TRAIN_logger = print
+
+
+
 
     def reset(self):
         self.deck.reset()
@@ -177,7 +203,7 @@ class BriscolaGame:
             for i in self.players_order:
                 self.players[i].draw(self.deck)
 
-        self.print_summary()
+        #self.print_summary()
 
 
     def get_player_actions(self, player_id):
@@ -209,10 +235,16 @@ class BriscolaGame:
 
         player = self.players[player_id]
 
+        self.DEBUG_logger("Player ", player_id, " hand: ", [card.name for card in player.hand])
+        self.DEBUG_logger("Player ", player_id, " choose action ", action)
+
         card_id = player.play_card(action)
         if card_id is None:
-            print ("PLAY_CARD IS NONE!!!!!------------------")
+            raise InvalidAction
+
         card = self.deck.get_card(card_id)
+
+        self.PVP_logger("Player ", player_id, " played ", card.name)
 
         # this is shallow copied into self.turn, so I only have to update once
         self.played_cards.append(card)
@@ -227,6 +259,8 @@ class BriscolaGame:
         winner_player = self.players[winner_player_id]
 
         self.update_game(winner_player, points)
+
+        self.PVP_logger("Player ", winner_player_id, " wins ", points, " points with ", strongest_card.name)
 
         return winner_player_id, points
 
@@ -272,6 +306,8 @@ class BriscolaGame:
             if player.points > winner_points:
                 winner_player_id = player.id
                 winner_points = player.points
+
+        self.PVP_logger("Player ", winner_player_id, " wins with ", winner_points, " points!!")
 
         return winner_player_id, winner_points
 
