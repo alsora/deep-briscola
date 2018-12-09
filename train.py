@@ -17,6 +17,13 @@ import environment as brisc
 # Model directory
 tf.flags.DEFINE_string("model_dir", "", "Where to save the trained model, checkpoints and stats (default: pwd/runs/timestamp)")
 
+# Training parameters
+tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
+tf.flags.DEFINE_integer("num_epochs", 20000, "Number of training epochs")
+
+# Saver parameters
+tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps")
+
 FLAGS = tf.flags.FLAGS
 
 def test(game, agents):
@@ -74,17 +81,10 @@ def main(argv=None):
     agents.append(DeepAgent())
     agents.append(RandomAgent())
 
-
-    train_epochs = 20000
-    test_every = 1000
     best_winning_ratio = -1
 
-    # First reset of the environment
-    game.reset()
-
-    for epoch in range(0, train_epochs):
+    for epoch in range(1, FLAGS.num_epochs + 1):
         print ("Epoch: ", epoch, end='\r')
-        print('', end='\r')
         game.reset()
         keep_playing = True
 
@@ -131,7 +131,7 @@ def main(argv=None):
 
         # here i should update the network according to game results
 
-        if epoch % test_every == 0:
+        if epoch % FLAGS.evaluate_every == 0:
             winning_ratio = test(game, agents)
             if winning_ratio > best_winning_ratio:
                 best_winning_ratio = winning_ratio

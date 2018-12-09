@@ -175,8 +175,6 @@ class BriscolaGame:
         self.TRAIN_logger = print
 
 
-
-
     def reset(self):
         self.deck.reset()
         self.history = []
@@ -219,6 +217,8 @@ class BriscolaGame:
         return players_order
 
     def draw_step(self):
+
+        self.PVP_logger("----------- NEW TURN -----------")
 
         for player_id in self.players_order:
             player = self.players[player_id]
@@ -280,18 +280,32 @@ class BriscolaGame:
         return ordered_winner_id, strongest_card
 
     @staticmethod
-    def scoring(briscola_seed, card_0, card_1):
+    def get_weakest_card(briscola_seed, cards):
+
+        ordered_loser_id = len(cards) - 1
+        weakest_card = cards[-1]
+
+        for ordered_player_id, card in reversed(list(enumerate(cards[:-1]))):
+            pair_winner = BriscolaGame.scoring(briscola_seed, weakest_card, card, keep_order=False)
+            if pair_winner is 0:
+                ordered_loser_id = ordered_player_id
+                weakest_card = card
+
+        return ordered_loser_id, weakest_card
+
+    @staticmethod
+    def scoring(briscola_seed, card_0, card_1, keep_order=True):
 
         card_0_seed = card_0.seed
         card_1_seed = card_1.seed
-
-        winner = 0
 
         if briscola_seed is not card_0_seed and briscola_seed is card_1_seed:
             winner = 1
         elif card_0_seed is card_1_seed:
             winner = 1 if card_1.strength > card_0.strength else 0
-        # if different seeds and none of them is briscola, first wins
+        else:
+            # if different seeds and none of them is briscola, first wins
+            winner = 0 if keep_order or card_0.points > card_1.points else 1
 
         return winner
 

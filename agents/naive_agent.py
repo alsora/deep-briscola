@@ -22,14 +22,16 @@ class NaiveAgent:
         briscola_seed = self.observed_state['briscola_seed']
 
         possible_winners = hand + played_cards
-        winner_index, strongest_card = brisc.BriscolaGame.get_strongest_card(briscola_seed, possible_winners)
+        strongest_index, strongest_card = brisc.BriscolaGame.get_strongest_card(briscola_seed, possible_winners)
 
-        if winner_index < len(hand) and len(played_cards) > 0:
-            action = winner_index
+        if strongest_index < len(hand) and played_cards:
+            action = strongest_index
+            return action
         else:
-            action = np.random.choice(actions)
+            weakest_index, weakest_card = brisc.BriscolaGame.get_weakest_card(briscola_seed, hand)
+            action = weakest_index
+            return action
 
-        return action
 
 
     def update(self, reward, new_state):
