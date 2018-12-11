@@ -293,10 +293,8 @@ class BriscolaGame:
 
         for ordered_player_id, card in reversed(list(enumerate(cards[:-1]))):
             pair_winner = BriscolaGame.scoring(briscola_seed, weakest_card, card, keep_order=False)
-            print ("comparing ", weakest_card.name, " with ", card.name, " ---> wins ", pair_winner)
             if pair_winner is 0:
                 ordered_loser_id = ordered_player_id
-                print ("updating weakest -->", card.name)
                 weakest_card = card
 
         return ordered_loser_id, weakest_card

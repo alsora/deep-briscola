@@ -20,7 +20,7 @@ def main(argv=None):
 
 
     # Initializing the environment
-    game = brisc.BriscolaGame(brisc.LoggerLevels.DEBUG)
+    game = brisc.BriscolaGame(brisc.LoggerLevels.PVP)
     deck = game.deck
 
     #visualizer = Visualizer()

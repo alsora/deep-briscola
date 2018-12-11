@@ -79,14 +79,16 @@ class AIAgent:
                 # I have more than one briscola for winning the hand, play the weakest
                 else:
                     win_cards = [hand[i] for i in win_actions]
-                    print (win_cards)
-                    print (win_actions)
                     weakest_win_index, weakest_win_card = brisc.BriscolaGame.get_weakest_card(briscola_seed, win_cards)
                     return win_actions[weakest_win_index]
         # if I am here I can't win the hand or there are no points on table (there may be no card at all)
         weakest_index, weakest_card = brisc.BriscolaGame.get_weakest_card(briscola_seed, hand)
-        print ("choosing weakest: ", weakest_index," is ", weakest_card.name )
-        return weakest_index
+        # i would rather throw a small briscola than a carico
+        if weakest_card.points > 4:
+            low_points_sorted_cards = sorted(hand, key=lambda card: card.strength)
+            return hand.index(low_points_sorted_cards[0])
+        else:
+            return weakest_index
 
 
     def update(self, reward):
