@@ -23,7 +23,7 @@ def main(argv=None):
     game = brisc.BriscolaGame(brisc.LoggerLevels.DEBUG)
     deck = game.deck
 
-    visualizer = Visualizer()
+    #visualizer = Visualizer()
     #visualizer.create_deck(game.deck.deck)
 
     # Initialize agents

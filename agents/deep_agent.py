@@ -20,16 +20,9 @@ class DeepAgent(DeepAgentBase):
 
     def observe(self, game, player, deck):
         self.observed_state['hand'] = player.get_player_state()
-        #self.observed_state['hand_one_hot'] = deck.get_cards_one_hot([card.id for card in self.observed_state['hand']])
-        self.observed_state['turn_state'] = game.get_turn_state()
+        self.observed_state['played_cards'] = (game.get_turn_state())['played_cards']
         self.observed_state['briscola'] = game.briscola
         self.observed_state['briscola_seed'] = game.briscola_seed
-        #self.observed_state['briscola_one_hot'] = deck.get_card_one_hot(game.briscola.id)
-        #self.observed_state['played_cards_one_hot'] = deck.get_cards_one_hot([card.id for card in self.observed_state['turn_state']['played_cards']])
-
-        #hand_one_hot = np.array(self.observed_state['hand_one_hot'])
-        #briscola_one_hot = np.array(self.observed_state['briscola_one_hot'])
-        #played_cards_one_hot = np.array(self.observed_state['played_cards_one_hot'])
 
         # (1,70) each card is (1,14) separating id and seed
         state=np.array([])
@@ -39,59 +32,19 @@ class DeepAgent(DeepAgentBase):
             id_one_hot[card.number] = 1
             seed_one_hot[card.seed] = 1
             state = np.concatenate((state, np.concatenate((id_one_hot, seed_one_hot), axis=0)), axis=0)
-        target_length = 14 * 3
-        state = np.pad(state, (0, target_length - len(state)), 'constant')
-        for i, card in enumerate(self.observed_state['turn_state']['played_cards']):
+        state = self.pad_to_n(state, 14 * 3)
+        for i, card in enumerate(self.observed_state['played_cards']):
             id_one_hot = np.zeros(10)
             seed_one_hot = np.zeros(4)
             id_one_hot[card.number] = 1
             seed_one_hot[card.seed] = 1
             state = np.concatenate((state, np.concatenate((id_one_hot, seed_one_hot), axis=0)), axis=0)
-        target_length = 14 * 4
-        state = np.pad(state, (0, target_length - len(state)), 'constant')
+        state = self.pad_to_n(state, 14 * 4)
         briscola_id_one_hot = np.zeros(10)
         briscola_seed_one_hot = np.zeros(4)
         briscola_id_one_hot[self.observed_state['briscola'].number] = 1
         briscola_seed_one_hot[self.observed_state['briscola'].seed] = 1
         state = np.concatenate((state, np.concatenate((briscola_id_one_hot, briscola_seed_one_hot), axis=0)), axis=0)
-
-        '''
-        # (1,5) compact input
-        #state = np.array([game.briscola.id])
-        state = np.array([game.briscola_seed])
-        for card in self.observed_state['hand']:
-            state = np.append(state, np.array([card.id]))
-        target_length = 4
-        state = np.pad(state, (0, target_length - len(state)), 'constant', constant_values=(99,99))
-        for card in self.observed_state['turn_state']['played_cards']:
-            state = np.append(state, np.array([card.id]))
-        target_length = 5
-        state = np.pad(state, (0, target_length - len(state)), 'constant', constant_values=(99,99))
-        '''
-        '''
-        # (1, 40) state: PROBLEM: briscola is overwritten once drawn
-        state = 10*briscola_one_hot -1*played_cards_one_hot
-        for i, card in enumerate(self.observed_state['hand']):
-            state += (i+1) * deck.get_card_one_hot(card.id)
-        '''
-        '''
-        # (1, 120) state: 40 hand + 40 played + 40 briscola
-        for i, card in enumerate(self.observed_state['hand']):
-            state += (i+1) * deck.get_card_one_hot(card.id)
-        state = np.concatenate((state, played_cards_one_hot), axis=0)
-        state = np.concatenate((state, briscola_one_hot), axis=0)
-        '''
-        '''
-        # (1, 200) state (hand is not merged) PROBLEM: extremely sparse
-        state = np.array([])
-        for card in self.observed_state['hand']:
-            state = np.concatenate((state, deck.get_card_one_hot(card.id)), axis=0)
-        target_length = 40 * 3
-        state = np.pad(state, (0, target_length - len(state)), 'constant')
-        state = np.concatenate((state, played_cards_one_hot), axis=0)
-        state = np.concatenate((state, briscola_one_hot), axis=0)
-        '''
-
 
         self.last_state = self.state
         self.state = state
@@ -121,3 +74,9 @@ class DeepAgent(DeepAgentBase):
 
         self.action = action
         return action
+
+    @staticmethod
+    def pad_to_n(state, n):
+        target_length = n
+        state = np.pad(state, (0, target_length - len(state)), 'constant')
+        return state

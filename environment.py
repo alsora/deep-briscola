@@ -160,7 +160,7 @@ class BriscolaPlayer:
 
 class BriscolaGame:
 
-    def __init__(self, verbosity):
+    def __init__(self, verbosity=LoggerLevels.TEST):
         self.deck = BriscolaDeck()
         self.configure_logger(verbosity)
 
@@ -293,8 +293,10 @@ class BriscolaGame:
 
         for ordered_player_id, card in reversed(list(enumerate(cards[:-1]))):
             pair_winner = BriscolaGame.scoring(briscola_seed, weakest_card, card, keep_order=False)
+            print ("comparing ", weakest_card.name, " with ", card.name, " ---> wins ", pair_winner)
             if pair_winner is 0:
                 ordered_loser_id = ordered_player_id
+                print ("updating weakest -->", card.name)
                 weakest_card = card
 
         return ordered_loser_id, weakest_card
@@ -307,6 +309,8 @@ class BriscolaGame:
 
         if briscola_seed is not card_0_seed and briscola_seed is card_1_seed:
             winner = 1
+        elif briscola_seed is card_0_seed and briscola_seed is not card_1_seed:
+            winner = 0
         elif card_0_seed is card_1_seed:
             winner = 1 if card_1.strength > card_0.strength else 0
         else:
