@@ -1,10 +1,6 @@
-import itertools, time, random
-import numpy as np
 import tensorflow as tf
-import sys
-from matplotlib import pyplot as plt
 
-from agents.random_agent import RandomAgent
+from agents_base.random_agent import RandomAgent
 import environment as brisc
 
 

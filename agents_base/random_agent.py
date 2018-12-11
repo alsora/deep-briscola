@@ -6,7 +6,7 @@ class RandomAgent:
     def __init__(self):
         self.observed_state = {}
 
-    def observe(self, game, player, deck):
+    def observe(self, *_):
         pass
 
     def select_action(self, actions):
@@ -14,5 +14,5 @@ class RandomAgent:
         return np.random.choice(actions)
 
 
-    def update(self, reward, new_state):
+    def update(self, reward):
         pass

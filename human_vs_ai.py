@@ -1,15 +1,11 @@
-import itertools, time, random
-import numpy as np
 import tensorflow as tf
-import sys
-from matplotlib import pyplot as plt
 
-from agents.random_agent import RandomAgent
-from agents.naive_agent import NaiveAgent
+from agents.ai_agent import AIAgent
 from agents.deep_agent import DeepAgent
 from agents.human_agent import HumanAgent
-import environment as brisc
+
 from rendering import Visualizer
+import environment as brisc
 
 
 # Parameters
@@ -39,7 +35,7 @@ def main(argv=None):
         agent.load_model(FLAGS.model_dir)
         agents.append(agent)
     else:
-        agent = NaiveAgent()
+        agent = AIAgent()
         agents.append(agent)
 
     # First reset of the environment

@@ -25,12 +25,12 @@ class HumanAgent:
             print("Not a number")
             action = np.random.choice(actions)
 
-        if action >= len(actions):
+        if action not in actions:
             print ("Error, selected out of bounds action!!")
             action = np.random.choice(actions)
 
         return action
 
 
-    def update(self, reward, new_state):
+    def update(self, reward):
         pass

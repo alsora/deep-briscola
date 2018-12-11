@@ -16,12 +16,13 @@ class LoggerLevels(Enum):
     TEST = 2
     TRAIN = 3
 
-class Card:
+class BriscolaCard:
 
     def __init__(self):
         self.id = -1
-        self.name = None
+        self.name = ''
         self.seed = -1
+        self.number = -1
         self.strength = -1
         self.points = -1
 
@@ -30,30 +31,54 @@ class BriscolaDeck:
     global names, seeds
 
     def __init__(self):
-        self.create_deck()
+        self.create_decklist()
         self.reset()
 
-    def create_deck(self):
+    def create_decklist(self):
         self.deck = []
         id = 0
         for s, seed in enumerate(seeds):
             for n, name in enumerate(names):
-                card = Card()
+                card = BriscolaCard()
                 card.id = id
                 card.name = name + ' di ' + seed
                 card.seed = s
+                card.number = n
                 card.strength = strengths[n]
                 card.points = points[n]
                 self.deck.append(card)
                 id += 1
 
+    def reset(self):
+        self.briscola = None
+        self.end_deck = False
+
+        self.current_deck = self.deck.copy()
+        self.shuffle()
+
+    def shuffle(self):
+        random.shuffle(self.current_deck)
+
     def place_briscola(self, briscola):
         self.briscola = briscola
 
-    def reset(self):
-        self.current_deck = self.deck.copy()
-        self.briscola = None
-        self.last_turn_done = False
+    def draw_card(self):
+        """
+        tool that allows drawing card
+        """
+
+        if self.end_deck:
+            return None
+
+        drawn_card = None
+
+        if self.current_deck:
+            drawn_card =  self.current_deck.pop()
+        else:
+            drawn_card = self.briscola
+            self.end_deck = True
+
+        return drawn_card
 
     def get_deck_size(self):
         return len(self.deck)
@@ -71,35 +96,16 @@ class BriscolaDeck:
         return self.deck[id]
 
     def get_card_one_hot(self, id):
-        #one_hot_vector = np.zeros(self.get_deck_size())
-        #one_hot_vector[id] = 1
-        one_hot_vector = [1 if i == id else 0 for i in list(range(self.get_deck_size()))]
+        one_hot_vector = np.zeros(self.get_deck_size())
+        one_hot_vector[id] = 1
         return one_hot_vector
 
     def get_cards_one_hot(self, ids):
-        one_hot_vector = [1 if id in ids else 0 for id in list(range(self.get_deck_size()))]
+        one_hot_vector = np.zeros(self.get_deck_size())
+        for id in ids:
+            one_hot_vector[id] = 1
         return one_hot_vector
 
-    def draw_card(self):
-        """
-        tool that allows drawing card
-        """
-
-        drawn_card = None
-
-        if len(self.current_deck) == 0:
-            if self.briscola:
-                drawn_card = self.briscola
-                self.briscola = None
-            else:
-                return None
-        else:
-            available_cards_id = list(range(0, self.get_current_deck_size()))
-            drawn_card_id = np.random.choice(available_cards_id)
-            drawn_card = self.current_deck[drawn_card_id]
-            del self.current_deck[drawn_card_id]
-
-        return drawn_card
 
 
 
@@ -182,7 +188,7 @@ class BriscolaGame:
 
         # Initilize the players
         self.players = [BriscolaPlayer(i) for i in range(2)]
-        self.turn_player = random.randint(1,2)
+        self.turn_player = random.randint(0,1)
 
         self.players_order = self.get_players_order()
 
@@ -212,8 +218,8 @@ class BriscolaGame:
         return self.turn_state
 
     def get_players_order(self):
-
-        players_order = [ i % len(self.players) for i in range(self.turn_player, self.turn_player + len(self.players))]
+        num_players = len(self.players)
+        players_order = [ i % num_players for i in range(self.turn_player, self.turn_player + num_players)]
         return players_order
 
     def draw_step(self):

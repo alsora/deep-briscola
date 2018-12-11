@@ -1,7 +1,10 @@
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
 import environment as brisc
 
-class NaiveAgent:
+class AIAgent:
 
     def __init__(self):
         self.observed_state = {}
@@ -34,5 +37,5 @@ class NaiveAgent:
 
 
 
-    def update(self, reward, new_state):
+    def update(self, reward):
         pass
