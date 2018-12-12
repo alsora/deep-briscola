@@ -10,13 +10,11 @@ from agents_base.deep_agent import DeepAgent as DeepAgentBase
 
 class DeepAgent(DeepAgentBase):
 
-    def __init__(self, epsilon=0.85, epsilon_increment=0, discount=0.95):
+    def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95):
         self.n_actions = 3
         self.n_features = 70
-        self.epsilon_max = 0.99
+        self.epsilon_max = epsilon_max
         self.epsilon = epsilon
-        if self.epsilon > self.epsilon_max:
-            self.epsilon = self.epsilon_max
         self.epsilon_increment = epsilon_increment
         self.gamma = discount # reward discount factor
         super().__init__(self.n_actions, self.n_features)
@@ -78,7 +76,6 @@ class DeepAgent(DeepAgentBase):
             self.count_wrong_moves += 1
             action = np.random.choice(actions)
 
-        self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.action = action
         return action
 

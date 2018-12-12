@@ -39,6 +39,14 @@ class DeepAgent:
 
     def __init__(self, n_actions, n_features):
 
+        # network parameters
+        # i.e. state is (None, n_features)
+        self.n_features = n_features
+        self.n_actions = n_actions
+        self.learning_rate = 1e-4
+        self.batch_size = 100
+        self.replace_target_iter = 2000
+
         # init vars
         self.observed_state = {}
         self.learn_step_counter = 0
@@ -48,14 +56,6 @@ class DeepAgent:
         self.state_ = None
         self.action = None
         self.reward = None
-
-        # network parameters
-        # i.e. state is (None, n_features)
-        self.n_features = n_features
-        self.n_actions = n_actions
-        self.learning_rate = 1e-4
-        self.batch_size = 100
-        self.replace_target_iter = 2500
 
         # create network
         self.replay_memory = ReplayMemory(10000, self.n_features)
@@ -134,7 +134,7 @@ class DeepAgent:
             self.reward = reward
         '''
         self.reward = reward
-
+        self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         if self.last_state is None:
             return
 
@@ -160,7 +160,7 @@ class DeepAgent:
             })
 
         if self.learn_step_counter % self.replace_target_iter == 0:
-            print("Loss: ", loss)
+            print("Loss: ", loss, " Epsilon: ", self.epsilon)
 
         self.learn_step_counter += 1
 

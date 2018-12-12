@@ -2,14 +2,6 @@ import itertools, time, random
 import numpy as np
 from enum import Enum
 
-from errors_classes import CardsFinished,InvalidAction,PlayerIdError, DrawingProblem
-
-# Immutable variables
-points = [11,0,10,0,0,0,0,2,3,4]
-strengths = [10,1,9,2,3,4,5,6,7,8]
-seeds = ['Spade','Coppe','Denari','Bastoni']
-names = ['Asso', 'Due', 'Tre', 'Quattro', 'Cinque', 'Sei', 'Sette', 'Fante', 'Cavallo', 'Re']
-
 class LoggerLevels(Enum):
     DEBUG = 0
     PVP = 1
@@ -35,6 +27,12 @@ class BriscolaDeck:
         self.reset()
 
     def create_decklist(self):
+
+        points = [11,0,10,0,0,0,0,2,3,4]
+        strengths = [10,1,9,2,3,4,5,6,7,8]
+        seeds = ['Spade','Coppe','Denari','Bastoni']
+        names = ['Asso', 'Due', 'Tre', 'Quattro', 'Cinque', 'Sei', 'Sette', 'Fante', 'Cavallo', 'Re']
+
         self.deck = []
         id = 0
         for s, seed in enumerate(seeds):
@@ -125,9 +123,7 @@ class BriscolaPlayer:
         self.points = 0
 
     def draw(self, deck):
-        """
-            the player draws a card from the deck
-        """
+
         new_card = deck.draw_card()
 
         if new_card is None and len(self.hand) is 0:
@@ -137,7 +133,7 @@ class BriscolaPlayer:
             self.hand.append(new_card)
 
         if len(self.hand) > 3:
-            raise DrawingProblem
+            raise ValueError("player.draw caused the player to have more than 3 cards in hand!")
 
         return True
 
@@ -243,7 +239,7 @@ class BriscolaGame:
 
         card_id = player.play_card(action)
         if card_id is None:
-            raise InvalidAction
+            raise ValueError("player.play_card failed!")
 
         card = self.deck.get_card(card_id)
 
@@ -257,18 +253,18 @@ class BriscolaGame:
 
         winner_player_id, points = self.evaluate_step()
 
-        game_winner_id = -1
-        if self.check_end_game():
-            game_winner_id, _ = self.get_winner()
+        #game_winner_id = -1
+        #if self.check_end_game():
+            #game_winner_id, _ = self.get_winner()
 
         rewards = []
         for player_id in self.get_players_order():
             player = self.players[player_id]
 
             reward = points if player_id is winner_player_id else -points
-            if game_winner_id >= 0:
-                game_end_reward = player.points - 60
-                reward += game_end_reward
+            #if game_winner_id >= 0:
+                #game_end_reward = player.points - 60
+                #reward += game_end_reward
 
             rewards.append(reward)
 
@@ -353,6 +349,9 @@ class BriscolaGame:
 
 
     def end_game(self):
+
+        if not self.check_end_game():
+            raise ValueError('Calling BriscolaGame.end_game when the game has not ended!')
 
         winner_player_id, winner_points = self.get_winner()
 

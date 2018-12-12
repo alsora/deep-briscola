@@ -17,9 +17,10 @@ tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
 tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
 
 # Deep Agent parameters
-tf.flags.DEFINE_float("epsilon", 0.85, "How likely is the agent to choose the best reward action over a random one (default: 0.75)")
-tf.flags.DEFINE_float("epsilon_increment", 0, "How much epsilon is increased after each action takenm up to 1 (default: 0)")
-tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.75)")
+tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
+tf.flags.DEFINE_float("epsilon_increment", 5e-6, "How much epsilon is increased after each action takenm up to 1 (default: 5e-6)")
+tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremental epsilon (default: 0.85)")
+tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.85)")
 
 # Evaluation parameters
 tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
@@ -36,7 +37,7 @@ def main(argv=None):
 
     # Initialize agents
     agents = []
-    agent = DeepAgent(FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.discount)
+    agent = DeepAgent(FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount)
     agents.append(agent)
     agent = RandomAgent()
     agents.append(agent)

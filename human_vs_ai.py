@@ -4,7 +4,6 @@ from agents.ai_agent import AIAgent
 from agents.deep_agent import DeepAgent
 from agents.human_agent import HumanAgent
 
-from rendering import Visualizer
 import environment as brisc
 
 
@@ -12,7 +11,7 @@ import environment as brisc
 # ==================================================
 
 # Model directory
-tf.flags.DEFINE_string("model_dir", "", "Where to save the trained model, checkpoints and stats (default: pwd/runs/timestamp)")
+tf.flags.DEFINE_string("model_dir", "", "Provide a trained model path if you want to play against a deep agent (default: None)")
 
 FLAGS = tf.flags.FLAGS
 
@@ -22,9 +21,6 @@ def main(argv=None):
     # Initializing the environment
     game = brisc.BriscolaGame(brisc.LoggerLevels.PVP)
     deck = game.deck
-
-    #visualizer = Visualizer()
-    #visualizer.create_deck(game.deck.deck)
 
     # Initialize agents
     agents = []
