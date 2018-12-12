@@ -1,15 +1,15 @@
 # deep-briscola
 
-Tensorflow reinforcement learning agent playing Briscola card game.
+Tensorflow deep reinforcement learning agent playing Briscola card game.
 
-[**What is Briscola ??**](https://en.wikipedia.org/wiki/Briscola)
+[**What is Briscola??**](https://en.wikipedia.org/wiki/Briscola)
 
 
-This repository contains a Briscola game environment where different type of agents can play.
+This repository contains a Briscola game environment where different agents can play.
 
  - `RandomAgent`: choose each move in a random fashion
  - `AIAgent`: knows the rules and the strategies for winning the game
- - `DeepAgent`: agent trained using deep reinforcement lrearning
+ - `DeepAgent`: agent trained using deep reinforcement learning
  - `HumanAgent`: yourself
 
 

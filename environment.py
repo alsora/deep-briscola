@@ -63,9 +63,6 @@ class BriscolaDeck:
         self.briscola = briscola
 
     def draw_card(self):
-        """
-        tool that allows drawing card
-        """
 
         if self.end_deck:
             return None
@@ -84,7 +81,9 @@ class BriscolaDeck:
         return len(self.deck)
 
     def get_current_deck_size(self):
-        return len(self.current_deck)
+        current_deck_size = len(self.current_deck)
+        current_deck_size += 1 if self.briscola else 0
+        return len()
 
     def get_card_name(self, id):
         return self.deck[id].name
@@ -207,8 +206,6 @@ class BriscolaGame:
             for i in self.players_order:
                 self.players[i].draw(self.deck)
 
-        #self.print_summary()
-
 
     def get_player_actions(self, player_id):
         player = self.players[player_id]
@@ -254,6 +251,28 @@ class BriscolaGame:
 
         # this is shallow copied into self.turn, so I only have to update once
         self.played_cards.append(card)
+
+
+    def get_rewards_from_step(self):
+
+        winner_player_id, points = self.evaluate_step()
+
+        game_winner_id = -1
+        if self.check_end_game():
+            game_winner_id, _ = self.get_winner()
+
+        rewards = []
+        for player_id in self.get_players_order():
+            player = self.players[player_id]
+
+            reward = points if player_id is winner_player_id else -points
+            if game_winner_id >= 0:
+                game_end_reward = player.points - 60
+                reward += game_end_reward
+
+            rewards.append(reward)
+
+        return rewards
 
 
     def evaluate_step(self):
@@ -317,9 +336,10 @@ class BriscolaGame:
 
         return winner
 
+    def check_end_game(self):
+        return self.deck.end_deck
 
-
-    def end_game(self):
+    def get_winner(self):
 
         winner_player_id = -1
         winner_points = -1
@@ -328,6 +348,13 @@ class BriscolaGame:
             if player.points > winner_points:
                 winner_player_id = player.id
                 winner_points = player.points
+
+        return winner_player_id, winner_points
+
+
+    def end_game(self):
+
+        winner_player_id, winner_points = self.get_winner()
 
         self.PVP_logger("Player ", winner_player_id, " wins with ", winner_points, " points!!")
 
@@ -346,7 +373,7 @@ class BriscolaGame:
 
         self.played_cards = []
         self.turn_player = winner_player_id
-        self.players_order= self.get_players_order()
+        self.players_order = self.get_players_order()
 
         self.turn_state = {
             'played_cards': self.played_cards,

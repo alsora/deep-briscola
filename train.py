@@ -2,8 +2,8 @@ import tensorflow as tf
 
 from agents_base.random_agent import RandomAgent
 from agents.deep_agent import DeepAgent
+from agents.ai_agent import AIAgent
 import environment as brisc
-
 
 
 # Parameters
@@ -16,11 +16,77 @@ tf.flags.DEFINE_string("model_dir", "", "Where to save the trained model, checkp
 tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
 tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
 
+# Deep Agent parameters
+tf.flags.DEFINE_float("epsilon", 0.85, "How likely is the agent to choose the best reward action over a random one (default: 0.75)")
+tf.flags.DEFINE_float("epsilon_increment", 0, "How much epsilon is increased after each action takenm up to 1 (default: 0)")
+tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.75)")
+
 # Evaluation parameters
-tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps")
-tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate model on dev set after this many steps")
+tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
+tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate on these many episodes for each test (default: 500)")
 
 FLAGS = tf.flags.FLAGS
+
+
+def main(argv=None):
+
+    # Initializing the environment
+    game = brisc.BriscolaGame(verbosity=brisc.LoggerLevels.TRAIN)
+    deck = game.deck
+
+    # Initialize agents
+    agents = []
+    agent = DeepAgent(FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.discount)
+    agents.append(agent)
+    agent = RandomAgent()
+    agents.append(agent)
+
+    best_winning_ratio = -1
+
+    for epoch in range(1, FLAGS.num_epochs + 1):
+        print ("Epoch: ", epoch, end='\r')
+        game.reset()
+        keep_playing = True
+
+        while keep_playing:
+
+            # action step
+            players_order = game.get_players_order()
+            for player_id in players_order:
+
+                player = game.players[player_id]
+                agent = agents[player_id]
+                # agent observes state before acting
+                agent.observe(game, player, deck)
+                available_actions = game.get_player_actions(player_id)
+                action = agent.select_action(available_actions)
+
+                game.play_step(action, player_id)
+
+            rewards = game.get_rewards_from_step()
+            # update agents
+            for i, player_id in enumerate(players_order):
+                player = game.players[player_id]
+                agent = agents[player_id]
+                # agent observes new state after acting
+                agent.observe(game, player, deck)
+
+                reward = rewards[i]
+                agent.update(reward)
+
+            # update the environment
+            keep_playing = game.draw_step()
+
+
+        game_winner_id, winner_points = game.end_game()
+
+        if epoch % FLAGS.evaluate_every == 0:
+            winning_ratio = test(game, agents)
+            if winning_ratio > best_winning_ratio:
+                best_winning_ratio = winning_ratio
+                agents[0].save_model(FLAGS.model_dir)
+
+
 
 def test(game, agents):
 
@@ -64,89 +130,6 @@ def test(game, agents):
 
     return victory_rate
 
-
-
-def main(argv=None):
-
-    # Initializing the environment
-    game = brisc.BriscolaGame(verbosity=brisc.LoggerLevels.TRAIN)
-    deck = game.deck
-
-    # Initialize agents
-    agents = []
-    agents.append(DeepAgent())
-    agents.append(RandomAgent())
-
-    best_winning_ratio = -1
-
-    for epoch in range(1, FLAGS.num_epochs + 1):
-        print ("Epoch: ", epoch, end='\r')
-        game.reset()
-        keep_playing = True
-
-        while keep_playing:
-
-            # action step
-            players_order = game.get_players_order()
-            for player_id in players_order:
-
-                player = game.players[player_id]
-                agent = agents[player_id]
-                # agent observes state before acting
-                agent.observe(game, player, deck)
-                available_actions = game.get_player_actions(player_id)
-                action = agent.select_action(available_actions)
-
-                game.play_step(action, player_id)
-
-
-            winner_player_id, points = game.evaluate_step()
-
-            # update agents
-            for player_id in players_order:
-                player = game.players[player_id]
-                agent = agents[player_id]
-                # agent observes new state after acting
-                agent.observe(game, player, deck)
-
-                reward = points if player_id is winner_player_id else -points
-
-                '''
-                # compute reward function for this player
-                if player_id is winner_player_id:
-                    reward = points
-                elif points >= 10:
-                    reward = -2
-                else:
-                    reward = 0
-                '''
-                agent.update(reward)
-
-            # update the environment
-            keep_playing = game.draw_step()
-
-
-        game_winner_id, winner_points = game.end_game()
-        '''
-        # update agents
-        for player_id in players_order:
-            player = game.players[player_id]
-            agent = agents[player_id]
-
-            # compute reward function for this player
-            if player_id is game_winner_id:
-                reward = 40
-            else:
-                reward = -20
-
-            agent.update(reward)
-        '''
-
-        if epoch % FLAGS.evaluate_every == 0:
-            winning_ratio = test(game, agents)
-            if winning_ratio > best_winning_ratio:
-                best_winning_ratio = winning_ratio
-                agents[0].save_model(FLAGS.model_dir)
 
 
 

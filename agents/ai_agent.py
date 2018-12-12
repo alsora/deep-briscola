@@ -11,16 +11,13 @@ class AIAgent:
 
     def observe(self, game, player, deck):
         self.observed_state['hand'] = player.get_player_state()
-        self.observed_state['hand_one_hot'] = deck.get_cards_one_hot([card.id for card in self.observed_state['hand']])
-        self.observed_state['turn_state'] = game.get_turn_state()
+        self.observed_state['played_cards'] = game.played_cards
         self.observed_state['briscola_seed'] = game.briscola_seed
-        self.observed_state['briscola_one_hot'] = deck.get_card_one_hot(game.briscola.id)
-        self.observed_state['played_cards_one_hot'] = deck.get_cards_one_hot([card.id for card in self.observed_state['turn_state']['played_cards']])
 
 
     def select_action(self, actions):
 
-        played_cards = self.observed_state['turn_state']['played_cards']
+        played_cards = self.observed_state['played_cards']
         hand =  self.observed_state['hand']
         briscola_seed = self.observed_state['briscola_seed']
 

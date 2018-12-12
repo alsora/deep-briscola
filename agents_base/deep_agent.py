@@ -54,8 +54,6 @@ class DeepAgent:
         self.n_features = n_features
         self.n_actions = n_actions
         self.learning_rate = 1e-4
-        self.epsilon = 0.85 # grediness
-        self.gamma = 0.95 # reward discount factor
         self.batch_size = 100
         self.replace_target_iter = 2500
 
@@ -129,10 +127,13 @@ class DeepAgent:
 
     def update(self, reward):
 
+        '''
         if self.wrong_move:
             self.reward = -10
         else:
             self.reward = reward
+        '''
+        self.reward = reward
 
         if self.last_state is None:
             return
@@ -161,7 +162,6 @@ class DeepAgent:
         if self.learn_step_counter % self.replace_target_iter == 0:
             print("Loss: ", loss)
 
-        #self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
         self.learn_step_counter += 1
 
 
