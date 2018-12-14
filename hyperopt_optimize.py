@@ -19,9 +19,9 @@ space = {
     'learning_rate' : hp.choice('learning_rate', [1e-5, 1e-4, 1e-3])
 }
 
-NUM_EPOCHS=200#50 * 1000
-EVALUATE_EVERY=150#10 * 1000
-EVALUATE_FOR=100#1000
+NUM_EPOCHS=50 * 1000
+EVALUATE_EVERY=10 * 1000
+EVALUATE_FOR=1000
 OUTPUT_DIR='hyperopt_best_model'
 
 def train_agent(hype_space):
@@ -67,7 +67,7 @@ if __name__ == "__main__":
         train_agent,
         space,
         algo=tpe.suggest,
-        max_evals=2
+        max_evals=250
     )
 
     print(best_model)
