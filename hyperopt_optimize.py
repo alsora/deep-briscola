@@ -19,9 +19,10 @@ space = {
     'learning_rate' : hp.choice('learning_rate', [1e-5, 1e-4, 1e-3])
 }
 
-NUM_EPOCHS=50 * 1000
-EVALUATE_EVERY=10 * 1000
-EVALUATE_FOR=1000
+NUM_EPOCHS=200#50 * 1000
+EVALUATE_EVERY=150#10 * 1000
+EVALUATE_FOR=100#1000
+OUTPUT_DIR='hyperopt_best_model'
 
 def train_agent(hype_space):
 
@@ -50,10 +51,11 @@ def train_agent(hype_space):
             winning_ratio = train.evaluate(game, agents, EVALUATE_FOR)
             if winning_ratio > best_winning_ratio:
                 best_winning_ratio = winning_ratio
-                agents[0].save_model(FLAGS.model_dir)
+                agents[0].save_model(OUTPUT_DIR)
 
-    print ("Best winning ratio ----->", best_winning_ratio )
-    return best_winning_ratio
+    print ("Best winning ratio ----->", best_winning_ratio)
+    min_losing_ratio = 100 - best_winning_ratio
+    return min_losing_ratio
 
 
 
