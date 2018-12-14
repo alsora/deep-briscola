@@ -9,28 +9,25 @@ class AIAgent:
     def __init__(self):
         self.observed_state = {}
 
+
     def observe(self, game, player, deck):
-        self.observed_state['hand'] = player.get_player_state()
-        self.observed_state['played_cards'] = game.played_cards
-        self.observed_state['briscola_seed'] = game.briscola_seed
+        self.hand = player.hand
+        self.played_cards = game.played_cards
+        self.briscola_seed = game.briscola.seed
 
 
     def select_action(self, actions):
 
-        played_cards = self.observed_state['played_cards']
-        hand =  self.observed_state['hand']
-        briscola_seed = self.observed_state['briscola_seed']
-
         points_on_table =  0
-        for played_card in played_cards:
+        for played_card in self.played_cards:
             points_on_table += played_card.points
         # enter if there is at least 1 card on the table and it's worth some points
         if points_on_table:
             win_actions = []
             points = []
-            for action_index, card in enumerate(hand):
-                for played_card in played_cards:
-                    winner = brisc.BriscolaGame.scoring(briscola_seed, played_card, card)
+            for action_index, card in enumerate(self.hand):
+                for played_card in self.played_cards:
+                    winner = brisc.BriscolaGame.scoring(self.briscola_seed, played_card, card)
                     if winner:
                         win_actions.append(action_index)
                         points.append(card.points)
@@ -39,10 +36,10 @@ class AIAgent:
                 # my cards which can win the hand, sorted from the most points I can earn from playing it
                 sorted_win_actions = [x for _,x in sorted(zip(points, win_actions), reverse=True)]
                 best_action = sorted_win_actions[0]
-                best_card = hand[best_action]
+                best_card = self.hand[best_action]
                 # if I can win without using a briscola, do it
                 for win_action in sorted_win_actions:
-                    if hand[win_action].seed != briscola_seed:
+                    if self.hand[win_action].seed != self.briscola_seed:
                         return win_action
                 # if I can only win playing a briscola (best_action is briscola, already checked before)
                 if len(win_actions) == 1:
@@ -53,8 +50,8 @@ class AIAgent:
                     # if I have a low points, non-briscola alternative to lose the hand, play the alternative
                     lose_action = -1
                     lose_points = 10
-                    for action_index, card in enumerate(hand):
-                        if action_index not in win_actions and card.points < lose_points and card.seed != briscola_seed:
+                    for action_index, card in enumerate(self.hand):
+                        if action_index not in win_actions and card.points < lose_points and card.seed != self.briscola_seed:
                             lose_action = action_index
                             lose_points = card.points
                     # I only have carichi losing cards and 1 winning briscola in hand, play the briscola
@@ -75,15 +72,15 @@ class AIAgent:
                         return lose_action
                 # I have more than one briscola for winning the hand, play the weakest
                 else:
-                    win_cards = [hand[i] for i in win_actions]
-                    weakest_win_index, weakest_win_card = brisc.BriscolaGame.get_weakest_card(briscola_seed, win_cards)
+                    win_cards = [self.hand[i] for i in win_actions]
+                    weakest_win_index, weakest_win_card = brisc.BriscolaGame.get_weakest_card(self.briscola_seed, win_cards)
                     return win_actions[weakest_win_index]
         # if I am here I can't win the hand or there are no points on table (there may be no card at all)
-        weakest_index, weakest_card = brisc.BriscolaGame.get_weakest_card(briscola_seed, hand)
+        weakest_index, weakest_card = brisc.BriscolaGame.get_weakest_card(self.briscola_seed, self.hand)
         # i would rather throw a small briscola than a carico
         if weakest_card.points > 4:
-            low_points_sorted_cards = sorted(hand, key=lambda card: card.strength)
-            return hand.index(low_points_sorted_cards[0])
+            low_points_sorted_cards = sorted(self.hand, key=lambda card: card.strength)
+            return self.hand.index(low_points_sorted_cards[0])
         else:
             return weakest_index
 

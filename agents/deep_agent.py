@@ -23,21 +23,17 @@ class DeepAgent(DeepAgentBase):
 
 
     def observe(self, game, player, deck):
-        self.observed_state['hand'] = player.get_player_state()
-        self.observed_state['played_cards'] = game.played_cards
-        self.observed_state['briscola'] = game.briscola
-        self.observed_state['briscola_seed'] = game.briscola_seed
 
         # (1,70) each card is (1,14) separating id and seed
         state=np.array([])
-        for i, card in enumerate(self.observed_state['hand']):
+        for i, card in enumerate(player.hand):
             id_one_hot = np.zeros(10)
             seed_one_hot = np.zeros(4)
             id_one_hot[card.number] = 1
             seed_one_hot[card.seed] = 1
             state = np.concatenate((state, np.concatenate((id_one_hot, seed_one_hot), axis=0)), axis=0)
         state = self.pad_to_n(state, 14 * 3)
-        for i, card in enumerate(self.observed_state['played_cards']):
+        for i, card in enumerate(game.played_cards):
             id_one_hot = np.zeros(10)
             seed_one_hot = np.zeros(4)
             id_one_hot[card.number] = 1
@@ -46,8 +42,8 @@ class DeepAgent(DeepAgentBase):
         state = self.pad_to_n(state, 14 * 4)
         briscola_id_one_hot = np.zeros(10)
         briscola_seed_one_hot = np.zeros(4)
-        briscola_id_one_hot[self.observed_state['briscola'].number] = 1
-        briscola_seed_one_hot[self.observed_state['briscola'].seed] = 1
+        briscola_id_one_hot[game.briscola.number] = 1
+        briscola_seed_one_hot[game.briscola.seed] = 1
         state = np.concatenate((state, np.concatenate((briscola_id_one_hot, briscola_seed_one_hot), axis=0)), axis=0)
 
         self.last_state = self.state

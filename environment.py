@@ -104,8 +104,6 @@ class BriscolaDeck:
         return one_hot_vector
 
 
-
-
 class BriscolaPlayer:
 
     action_space = ['first_card','second_card','third_card']
@@ -149,10 +147,6 @@ class BriscolaPlayer:
             return None
 
 
-    def get_player_state(self):
-        return self.hand
-
-
 class BriscolaGame:
 
     def __init__(self, verbosity=LoggerLevels.TEST):
@@ -184,18 +178,10 @@ class BriscolaGame:
         # Initilize the players
         self.players = [BriscolaPlayer(i) for i in range(2)]
         self.turn_player = random.randint(0,1)
-
         self.players_order = self.get_players_order()
-
-        self.turn_state = {
-            'played_cards': self.played_cards,
-            'players_order': self.players_order
-        }
 
         # Initialize the briscola
         self.briscola = self.deck.draw_card()
-        self.briscola_seed = self.briscola.seed
-
         self.deck.place_briscola(self.briscola)
 
         for _ in range(0,3):
@@ -207,13 +193,12 @@ class BriscolaGame:
         player = self.players[player_id]
         return list(range(len(player.hand)))
 
-    def get_turn_state(self):
-        return self.turn_state
 
     def get_players_order(self):
         num_players = len(self.players)
         players_order = [ i % num_players for i in range(self.turn_player, self.turn_player + num_players)]
         return players_order
+
 
     def draw_step(self):
 
@@ -273,7 +258,7 @@ class BriscolaGame:
 
     def evaluate_step(self):
 
-        ordered_winner_id, strongest_card = self.get_strongest_card(self.briscola_seed, self.played_cards)
+        ordered_winner_id, strongest_card = self.get_strongest_card(self.briscola.seed, self.played_cards)
         winner_player_id = self.players_order[ordered_winner_id]
 
         points = sum([card.points for card in self.played_cards])
@@ -284,6 +269,7 @@ class BriscolaGame:
         self.PVP_logger("Player ", winner_player_id, " wins ", points, " points with ", strongest_card.name)
 
         return winner_player_id, points
+
 
     @staticmethod
     def get_strongest_card(briscola_seed, cards):
@@ -300,6 +286,7 @@ class BriscolaGame:
 
         return ordered_winner_id, strongest_card
 
+
     @staticmethod
     def get_weakest_card(briscola_seed, cards):
 
@@ -313,6 +300,7 @@ class BriscolaGame:
                 weakest_card = card
 
         return ordered_loser_id, weakest_card
+
 
     @staticmethod
     def scoring(briscola_seed, card_0, card_1, keep_order=True):
@@ -332,8 +320,10 @@ class BriscolaGame:
 
         return winner
 
+
     def check_end_game(self):
         return self.deck.end_deck
+
 
     def get_winner(self):
 
@@ -365,46 +355,6 @@ class BriscolaGame:
         winner_player_id = winner_player.id
         winner_player.points += points
 
-        self.turn_state['winner_player_id'] = winner_player_id
-        self.turn_state['points'] = points
-
-        self.history.append(self.turn_state)
-
         self.played_cards = []
         self.turn_player = winner_player_id
         self.players_order = self.get_players_order()
-
-        self.turn_state = {
-            'played_cards': self.played_cards,
-            'players_order': self.players_order
-        }
-
-
-
-    def print_summary(self):
-
-        for player in self.players:
-            self.print_hand(player)
-
-        self.print_briscola()
-        #self.print_last_action()
-
-
-    def print_hand(self, player):
-
-        text = ''
-        if len(player.hand) > 0:
-            text += 'Player ' + str(player.id) + ' has hand: '
-            for i, card in enumerate(player.hand):
-                if i != 0:
-                    text += ', '
-                text += card.name
-
-        print(text)
-
-    def print_briscola(self):
-
-        briscola_name = self.briscola.name
-        print('The briscola is: ', briscola_name)
-
-
