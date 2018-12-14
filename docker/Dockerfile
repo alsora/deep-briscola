@@ -2,7 +2,7 @@
 # @2018
 
 FROM ubuntu:16.04
-MAINTAINER Alberto Soragna alberto dot soragna at gmail dot com
+LABEL maintainer="alberto dot soragna at gmail dot com"
 
 # working directory
 ENV HOME /root
@@ -42,7 +42,7 @@ RUN pip install tensorflow
 RUN apt-get install -y \
   python3-tk \
   libgtk2.0-dev
-RUN pip install matplotlib opencv-pythonW
+RUN pip install matplotlib opencv-python
 
 RUN apt-get install -y \
   protobuf-compiler \
@@ -57,10 +57,11 @@ RUN pip install \
   matplotlib \
   opencv-python
 
-RUN pip install gym
 RUN pip install PyOpenGL PyOpenGL-accelerate
 RUN apt-get install -y python3-pil python3-pil.imagetk
-#### SET ENVIRONMENTW
+RUN pip install hyperopt
+
+#### SET ENVIRONMENT
 
 RUN echo ' \n\
 alias python="python3"' >> $HOME/.bashrc

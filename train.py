@@ -33,7 +33,6 @@ def main(argv=None):
 
     # Initializing the environment
     game = brisc.BriscolaGame(verbosity=brisc.LoggerLevels.TRAIN)
-    deck = game.deck
 
     # Initialize agents
     agents = []
@@ -43,59 +42,64 @@ def main(argv=None):
     agents.append(agent)
 
     best_winning_ratio = -1
-
     for epoch in range(1, FLAGS.num_epochs + 1):
         print ("Epoch: ", epoch, end='\r')
+
         game.reset()
-        keep_playing = True
-
-        while keep_playing:
-
-            # action step
-            players_order = game.get_players_order()
-            for player_id in players_order:
-
-                player = game.players[player_id]
-                agent = agents[player_id]
-                # agent observes state before acting
-                agent.observe(game, player, deck)
-                available_actions = game.get_player_actions(player_id)
-                action = agent.select_action(available_actions)
-
-                game.play_step(action, player_id)
-
-            rewards = game.get_rewards_from_step()
-            # update agents
-            for i, player_id in enumerate(players_order):
-                player = game.players[player_id]
-                agent = agents[player_id]
-                # agent observes new state after acting
-                agent.observe(game, player, deck)
-
-                reward = rewards[i]
-                agent.update(reward)
-
-            # update the environment
-            keep_playing = game.draw_step()
-
-
-        game_winner_id, winner_points = game.end_game()
+        game_winner_id, winner_points = play_episode(game, agents)
 
         if epoch % FLAGS.evaluate_every == 0:
-            winning_ratio = test(game, agents)
+            winning_ratio = evaluate(game, agents, FLAGS.num_evaluations)
             if winning_ratio > best_winning_ratio:
                 best_winning_ratio = winning_ratio
                 agents[0].save_model(FLAGS.model_dir)
 
 
 
-def test(game, agents):
+def play_episode(game, agents):
+
+    deck = game.deck
+
+    keep_playing = True
+    while keep_playing:
+
+        # action step
+        players_order = game.get_players_order()
+        for player_id in players_order:
+
+            player = game.players[player_id]
+            agent = agents[player_id]
+            # agent observes state before acting
+            agent.observe(game, player, deck)
+            available_actions = game.get_player_actions(player_id)
+            action = agent.select_action(available_actions)
+
+            game.play_step(action, player_id)
+
+        rewards = game.get_rewards_from_step()
+        # update agents
+        for i, player_id in enumerate(players_order):
+            player = game.players[player_id]
+            agent = agents[player_id]
+            # agent observes new state after acting
+            agent.observe(game, player, deck)
+
+            reward = rewards[i]
+            agent.update(reward)
+
+        # update the environment
+        keep_playing = game.draw_step()
+
+    return game.end_game()
+
+
+def evaluate(game, agents, num_evaluations):
 
     deck = game.deck
     total_wins = [0, 0]
     total_points = [0, 0]
 
-    for _ in range(FLAGS.num_evaluations):
+    for _ in range(num_evaluations):
 
         game.reset()
         keep_playing = True
@@ -125,8 +129,8 @@ def test(game, agents):
         total_points[1 - game_winner_id] += (120 - winner_points)
 
 
-    victory_rate = (total_wins[0]/float(FLAGS.num_evaluations))*100
-    average_points = float(total_points[0])/float(FLAGS.num_evaluations)
+    victory_rate = (total_wins[0]/float(num_evaluations))*100
+    average_points = float(total_points[0])/float(num_evaluations)
     print("DeepAgent wins ", victory_rate, "% with average points ", average_points)
 
     return victory_rate
