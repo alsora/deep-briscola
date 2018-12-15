@@ -18,8 +18,8 @@ tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
 
 # Deep Agent parameters
 tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
-tf.flags.DEFINE_float("epsilon_increment", 5e-6, "How much epsilon is increased after each action takenm up to 1 (default: 5e-6)")
-tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremental epsilon (default: 0.85)")
+tf.flags.DEFINE_float("epsilon_increment", 5e-6, "How much epsilon is increased after each action taken up to epsilon_max (default: 5e-6)")
+tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremented epsilon (default: 0.85)")
 tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.85)")
 
 # Network parameters
