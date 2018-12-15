@@ -11,25 +11,25 @@ class LoggerLevels(Enum):
 class BriscolaCard:
 
     def __init__(self):
-        self.id = -1
-        self.name = ''
-        self.seed = -1
-        self.number = -1
-        self.strength = -1
-        self.points = -1
+        self.id = -1        # index of the one-hot encoded card [0, len(deck)]
+        self.name = ''      # name to display
+        self.seed = -1      # seed of the card [0, 3]
+        self.number = -1    # number of the card [0, 9]
+        self.strength = -1  # ordered number of the card [0, 9]
+        self.points = -1    # points value of the card [0, 11]
 
 
 class BriscolaDeck:
-    global names, seeds
 
     def __init__(self):
         self.create_decklist()
         self.reset()
 
-    def create_decklist(self):
 
+    def create_decklist(self):
+        ''' Create all the BriscolaCard and add them to deck'''
         points = [11,0,10,0,0,0,0,2,3,4]
-        strengths = [10,1,9,2,3,4,5,6,7,8]
+        strengths = [9,0,8,1,2,3,4,5,6,7]
         seeds = ['Spade','Coppe','Denari','Bastoni']
         names = ['Asso', 'Due', 'Tre', 'Quattro', 'Cinque', 'Sei', 'Sette', 'Fante', 'Cavallo', 'Re']
 
@@ -47,83 +47,80 @@ class BriscolaDeck:
                 self.deck.append(card)
                 id += 1
 
+
     def reset(self):
+        ''' Prepare the deck for a new game'''
         self.briscola = None
         self.end_deck = False
-
         self.current_deck = self.deck.copy()
         self.shuffle()
 
+
     def shuffle(self):
+        ''' Shuffle the deck'''
         random.shuffle(self.current_deck)
 
+
     def place_briscola(self, briscola):
+        ''' Set a card as briscola and allows to draw it after last card of the deck'''
+        if self.briscola is not None:
+            raise ValueError("Trying BriscolaDeck.place_briscola, but BriscolaDeck.briscola is not None")
         self.briscola = briscola
 
+
     def draw_card(self):
-
-        if self.end_deck:
-            return None
-
-        drawn_card = None
-
+        ''' If deck is not empty, then draw a card, else return the briscola or nothing'''
         if self.current_deck:
             drawn_card =  self.current_deck.pop()
         else:
             drawn_card = self.briscola
+            self.briscola = None
             self.end_deck = True
 
         return drawn_card
 
+
     def get_deck_size(self):
+        ''' Size of the full deck'''
         return len(self.deck)
 
+
     def get_current_deck_size(self):
+        '''Size of the current deck'''
         current_deck_size = len(self.current_deck)
         current_deck_size += 1 if self.briscola else 0
         return len()
 
-    def get_card_name(self, id):
-        return self.deck[id].name
-
-    def get_card_names(self, ids):
-        return[self.deck[id].name for id in ids ]
-
+    '''
     def get_card(self, id):
         return self.deck[id]
-
     def get_card_one_hot(self, id):
         one_hot_vector = np.zeros(self.get_deck_size())
         one_hot_vector[id] = 1
         return one_hot_vector
-
     def get_cards_one_hot(self, ids):
         one_hot_vector = np.zeros(self.get_deck_size())
         for id in ids:
             one_hot_vector[id] = 1
         return one_hot_vector
-
+    '''
 
 class BriscolaPlayer:
-
-    action_space = ['first_card','second_card','third_card']
 
     def __init__(self, _id):
         self.id = _id
         self.reset()
 
-    def reset(self):
-        self.last_action = ''
-        self.last_thee_turn = False  # TODO: do this in a better way pls
-        self.game_going = True
 
+    def reset(self):
         self.hand = []
         self.points = 0
 
+
     def draw(self, deck):
+        ''' Try to draw a card from the deck and return success or failure'''
 
         new_card = deck.draw_card()
-
         if new_card is None and len(self.hand) is 0:
             return False
 
@@ -137,11 +134,12 @@ class BriscolaPlayer:
 
 
     def play_card(self, hand_index):
+        ''' Try to play a card from the hand and return the chosen card or None if invalid index'''
 
         try:
             card = self.hand[hand_index]
             del self.hand[hand_index]
-            return card.id
+            return card
         except:
             print("PLAY CARD EXCEPTION----------_>")
             return None
@@ -149,7 +147,8 @@ class BriscolaPlayer:
 
 class BriscolaGame:
 
-    def __init__(self, verbosity=LoggerLevels.TEST):
+    def __init__(self, num_players = 2, verbosity=LoggerLevels.TEST):
+        self.num_players = num_players
         self.deck = BriscolaDeck()
         self.configure_logger(verbosity)
 
@@ -176,8 +175,8 @@ class BriscolaGame:
         self.played_cards = []
 
         # Initilize the players
-        self.players = [BriscolaPlayer(i) for i in range(2)]
-        self.turn_player = random.randint(0,1)
+        self.players = [BriscolaPlayer(i) for i in range(self.num_players)]
+        self.turn_player = random.randint(0, self.num_players - 1)
         self.players_order = self.get_players_order()
 
         # Initialize the briscola
@@ -190,18 +189,19 @@ class BriscolaGame:
 
 
     def get_player_actions(self, player_id):
+        ''' get list of available actions for a player'''
         player = self.players[player_id]
         return list(range(len(player.hand)))
 
 
     def get_players_order(self):
-        num_players = len(self.players)
-        players_order = [ i % num_players for i in range(self.turn_player, self.turn_player + num_players)]
+        ''' compute the clockwise players order starting from the current turn player'''
+        players_order = [ i % self.num_players for i in range(self.turn_player, self.turn_player + self.num_players)]
         return players_order
 
 
     def draw_step(self):
-
+        ''' each player, in order, tries to draw a card. return False if there are no more cards'''
         self.PVP_logger("----------- NEW TURN -----------")
 
         for player_id in self.players_order:
@@ -216,25 +216,24 @@ class BriscolaGame:
 
 
     def play_step(self, action, player_id):
+        ''' a player executes a chosen action'''
 
         player = self.players[player_id]
 
         self.DEBUG_logger("Player ", player_id, " hand: ", [card.name for card in player.hand])
         self.DEBUG_logger("Player ", player_id, " choose action ", action)
 
-        card_id = player.play_card(action)
-        if card_id is None:
+        card = player.play_card(action)
+        if card is None:
             raise ValueError("player.play_card failed!")
-
-        card = self.deck.get_card(card_id)
 
         self.PVP_logger("Player ", player_id, " played ", card.name)
 
-        # this is shallow copied into self.turn, so I only have to update once
         self.played_cards.append(card)
 
 
     def get_rewards_from_step(self):
+        ''' compute rewards for each player according to the just played cards'''
 
         winner_player_id, points = self.evaluate_step()
 
@@ -257,6 +256,7 @@ class BriscolaGame:
 
 
     def evaluate_step(self):
+        ''' look at played cards and decide which player won the hand'''
 
         ordered_winner_id, strongest_card = self.get_strongest_card(self.briscola.seed, self.played_cards)
         winner_player_id = self.players_order[ordered_winner_id]
@@ -290,10 +290,10 @@ class BriscolaGame:
     @staticmethod
     def get_weakest_card(briscola_seed, cards):
 
-        ordered_loser_id = len(cards) - 1
-        weakest_card = cards[-1]
+        ordered_loser_id = 0
+        weakest_card = cards[0]
 
-        for ordered_player_id, card in reversed(list(enumerate(cards[:-1]))):
+        for ordered_player_id, card in enumerate(cards[1:]):
             pair_winner = BriscolaGame.scoring(briscola_seed, weakest_card, card, keep_order=False)
             if pair_winner is 0:
                 ordered_loser_id = ordered_player_id
@@ -304,6 +304,9 @@ class BriscolaGame:
 
     @staticmethod
     def scoring(briscola_seed, card_0, card_1, keep_order=True):
+        ''' compare a pair of cards and decide who wins.
+            keep_order variable decides wether the first played card has a priority
+        '''
 
         card_0_seed = card_0.seed
         card_1_seed = card_1.seed
@@ -322,6 +325,7 @@ class BriscolaGame:
 
 
     def check_end_game(self):
+        ''' check if the game is ended'''
         return self.deck.end_deck
 
 

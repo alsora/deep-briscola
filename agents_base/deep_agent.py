@@ -5,27 +5,28 @@ import itertools, time, random, os, shutil
 
 class ReplayMemory:
 
-    def __init__(self, capacity, features):
+    def __init__(self, capacity, n_features):
 
-        n_features = features
-        # initialize zero memory [s, a, r, s_]
         self.capacity = capacity
+        # initialize zero memory, each sample in memory has size [s + a + r + s_]
         self.memory = np.zeros((self.capacity, n_features * 2 + 2))
         self.memory_counter = 0
 
     def push(self, s, a, r, s_):
-
+        # stacks together all states element
         event = np.hstack((s, [a, r], s_))
+        # get the index where to insert the event
         index = self.memory_counter % self.capacity
         self.memory[index, :] = event
         self.memory_counter += 1
 
     def sample(self, batch_size):
 
-        # sample batch memory from all written memory
         if self.memory_counter > self.capacity:
+            # the replay memory is all written, so I can sample on all the array size [0, self.capacity]
             sample_index = np.random.choice(self.capacity, size=batch_size)
         else:
+            # only part of the replay memory is written, so I sample up to where it's written [0, self.memory_counter]
             sample_index = np.random.choice(self.memory_counter, size=batch_size)
 
         batch_memory = self.memory[sample_index, :]
@@ -40,7 +41,6 @@ class DeepAgent:
     def __init__(self, n_actions, n_features):
 
         # network parameters
-        # i.e. state is (None, n_features)
         self.n_features = n_features
         self.n_actions = n_actions
         self.learning_rate = 1e-4
@@ -48,17 +48,19 @@ class DeepAgent:
         self.replace_target_iter = 2000
 
         # init vars
-        self.observed_state = {}
         self.learn_step_counter = 0
         self.wrong_move = False
         self.session = None
+        self.last_state = None
         self.state = None
-        self.state_ = None
         self.action = None
         self.reward = None
 
+        # create replay memroy
+        capacity = 10000
+        self.replay_memory = ReplayMemory(capacity, self.n_features)
+
         # create network
-        self.replay_memory = ReplayMemory(10000, self.n_features)
         self.create_network()
         self.initialize_session()
 
@@ -102,16 +104,17 @@ class DeepAgent:
                                             bias_initializer=b_initializer, name='q2')
 
         with tf.variable_scope('predictions'):
+            # predicted actions according to evaluation network
             self.predictions = tf.argmax(self.q_eval, 1, output_type=tf.int32, name="argmax")
-        # q_target is the discounted reward
         with tf.variable_scope('q_target'):
-            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_')    # shape=(None, )
+            # discounted reward on the target network
+            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_')
             self.q_target = tf.stop_gradient(q_target)
         with tf.variable_scope('q_eval'):
             a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
-            self.q_eval_wrt_a = tf.gather_nd(params=self.q_eval, indices=a_indices)    # shape=(None, )
-        # loss computed as difference between predicted q[a] and q_target
+            self.q_eval_wrt_a = tf.gather_nd(params=self.q_eval, indices=a_indices)
         with tf.variable_scope('loss'):
+            # loss computed as difference between predicted q[a] and q_target
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval_wrt_a, name='TD_error'))
         with tf.variable_scope('train'):
             opt = tf.train.AdamOptimizer(self.learning_rate)
@@ -122,34 +125,35 @@ class DeepAgent:
         e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
 
         with tf.variable_scope('hard_replacement'):
+            # operator for assiging target network weights to the evaluation network
             self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
 
     def update(self, reward):
-
+        ''' After receiving a reward the agent has all collected [s, a, r, s_]'''
         '''
         if self.wrong_move:
+            # reduce the reward if the agent's last move has been a not allowed move
             self.reward = -10
+            self.wrong_move = False
         else:
             self.reward = reward
         '''
+        # update last reward
         self.reward = reward
+        # update epsilon grediness
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
-        if self.last_state is None:
-            return
 
+        # I have a full event [s, a, r, s_], push it into replay memory
         self.replay_memory.push(self.last_state, self.action, self.reward, self.state)
 
         if self.replay_memory.size() < self.batch_size:
+            # there are not enough samples for a training step in the replay memory
             return
-
-        # check to replace target parameters
-        if self.learn_step_counter % self.replace_target_iter == 0:
-            self.session.run(self.target_replace_op)
-            #print('\ntarget_params_replaced\n')
-
+        # get a batch of samples from replay memory
         batch_memory = self.replay_memory.sample(self.batch_size)
 
+        # run a newtork training step
         _, loss = self.session.run(
             [self._train_op, self.loss,],
             feed_dict={
@@ -159,14 +163,16 @@ class DeepAgent:
                 self.s_: batch_memory[:, -self.n_features:],
             })
 
+        # check if it's time to copy the target network into the evaluation network
         if self.learn_step_counter % self.replace_target_iter == 0:
+            self.session.run(self.target_replace_op)
             print("Loss: ", loss, " Epsilon: ", self.epsilon)
 
         self.learn_step_counter += 1
 
 
     def initialize_session(self):
-        """Defines self.sess and initialize the variables"""
+        '''Defines self.sess and initialize the variables'''
         #self.logger.info("Initializing tf session")
         session_conf = tf.ConfigProto(
             allow_soft_placement = True,
@@ -179,12 +185,13 @@ class DeepAgent:
             pass
 
 
-    def save_model(self, output_dir = ''):
-
+    def save_model(self, output_dir):
+        '''Save the network graph and weights to disk'''
         if not output_dir:
-            output_dir = 'saved_model'
+            raise ValueError('You have to specify a valid output directory for DeepAgent.save_model')
 
         if os.path.exists(output_dir):
+            # if provided output_dir already exists, remove it
             shutil.rmtree(output_dir)
 
         builder = tf.saved_model.builder.SavedModelBuilder(output_dir)
@@ -192,14 +199,11 @@ class DeepAgent:
             self.session,
             [tf.saved_model.tag_constants.SERVING],
             clear_devices=True)
-
+        # create a new directory output_dir and store the saved model in it
         builder.save()
 
 
-    def load_model(self, saved_model_dir = ''):
-
-        if not saved_model_dir:
-            saved_model_dir = 'saved_model'
-
+    def load_model(self, saved_model_dir):
+        '''Initialize a new tensorflow session loading network and weights from a saved model'''
         tf.saved_model.loader.load(self.session, [tf.saved_model.tag_constants.SERVING], saved_model_dir)
 

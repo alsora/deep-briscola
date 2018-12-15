@@ -9,6 +9,7 @@ from agents_base.deep_agent import DeepAgent as DeepAgentBase
 
 
 class DeepAgent(DeepAgentBase):
+    ''' Trainable agent which uses a neural network to determine best action'''
 
     def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95):
         self.n_actions = 3
@@ -16,62 +17,69 @@ class DeepAgent(DeepAgentBase):
         self.epsilon_max = epsilon_max
         self.epsilon = epsilon
         self.epsilon_increment = epsilon_increment
-        self.gamma = discount # reward discount factor
+        self.gamma = discount
+        # initialize super class with neural network implementation
         super().__init__(self.n_actions, self.n_features)
 
         self.count_wrong_moves = 0
 
 
     def observe(self, game, player, deck):
+        ''' create an encoded state representation of the game to be fed into the neural network
+            the state is composed of 5 cards (3 in hand, 1 played card on table, 1 briscola)
+            each card is array of size 14, separating one hot encoded number and seed i.e. [number_one_hot, seed_one_hot]
+        '''
 
-        # (1,70) each card is (1,14) separating id and seed
-        state=np.array([])
+        # the state is array of size 70
+        state=np.zeros(70)
+        # add hand to state
         for i, card in enumerate(player.hand):
-            id_one_hot = np.zeros(10)
-            seed_one_hot = np.zeros(4)
-            id_one_hot[card.number] = 1
-            seed_one_hot[card.seed] = 1
-            state = np.concatenate((state, np.concatenate((id_one_hot, seed_one_hot), axis=0)), axis=0)
-        state = self.pad_to_n(state, 14 * 3)
+            number_index = i * 14 + card.number
+            state[number_index] = 1
+            seed_index = i * 14 + 10 + card.seed
+            state[seed_index] = 1
+        # add played cards to state
         for i, card in enumerate(game.played_cards):
-            id_one_hot = np.zeros(10)
-            seed_one_hot = np.zeros(4)
-            id_one_hot[card.number] = 1
-            seed_one_hot[card.seed] = 1
-            state = np.concatenate((state, np.concatenate((id_one_hot, seed_one_hot), axis=0)), axis=0)
-        state = self.pad_to_n(state, 14 * 4)
-        briscola_id_one_hot = np.zeros(10)
-        briscola_seed_one_hot = np.zeros(4)
-        briscola_id_one_hot[game.briscola.number] = 1
-        briscola_seed_one_hot[game.briscola.seed] = 1
-        state = np.concatenate((state, np.concatenate((briscola_id_one_hot, briscola_seed_one_hot), axis=0)), axis=0)
+            number_index = (i + 3) * 14 + card.number
+            state[number_index] = 1
+            seed_index = (i + 3) * 14 + 10 + card.seed
+            state[seed_index] = 1
+        # add briscola to state
+        number_index = 4 * 14 + game.briscola.number
+        state[number_index] = 1
+        seed_index = 4 * 14 + 10 + game.briscola.seed
+        state[seed_index] = 1
 
         self.last_state = self.state
         self.state = state
 
 
-
     def select_action(self, actions):
+        '''Selects an action given the observed state'''
+
+        if self.state is None:
+            raise ValueError("DeepAgent.select_action called before observing the state")
 
         if np.random.uniform() > self.epsilon:
+            # select action randomly with probability (1 - epsilon)
             action = np.random.choice(actions)
-            self.action = action
-            return action
+        else:
+            # select action that maximize q value expectation with probability (epsilon)
+            states_op = self.session.graph.get_operation_by_name("states").outputs[0]
+            predictions_op = self.session.graph.get_operation_by_name("predictions/argmax").outputs[0]
 
-        states_op = self.session.graph.get_operation_by_name("states").outputs[0]
-        predictions_op = self.session.graph.get_operation_by_name("predictions/argmax").outputs[0]
+            input_state = np.expand_dims(self.state, axis=0)
+            predictions, q_eval = self.session.run([predictions_op, self.q_eval], feed_dict={states_op: input_state})
 
-        input_state = np.expand_dims(self.state, axis=0)
-        predictions, q_eval = self.session.run([predictions_op, self.q_eval], feed_dict={states_op: input_state})
+            action = predictions[0]
 
-        action = predictions[0]
+            if action not in actions:
+                # the neural network output is not an available action, choose something random and increment wrong_move
+                self.wrong_move = True
+                self.count_wrong_moves += 1
+                action = np.random.choice(actions)
 
-        if action not in actions:
-            #print ("Selected invalid action!!!")
-            self.wrong_move = True
-            self.count_wrong_moves += 1
-            action = np.random.choice(actions)
-
+        # store the chosen action
         self.action = action
         return action
 

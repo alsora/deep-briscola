@@ -4,18 +4,21 @@ import numpy as np
 class HumanAgent:
 
     def __init__(self):
-        self.observed_state = {}
+        pass
 
     def observe(self, game, player, deck):
-        self.observed_state['hand'] = player.hand
-        self.observed_state['briscola'] = game.briscola
-        self.observed_state['played_cards'] = game.played_cards
+        self.hand = player.hand
+        self.briscola = game.briscola
+        self.played_cards = game.played_cards
 
     def select_action(self, actions):
+        ''' parse user input from keyboard
+            if it's not a valid action index, do something random
+        '''
 
         print("Your turn!")
-        print ("The briscola is ", self.observed_state['briscola'].name)
-        print ("Your hand is: ", [card.name for card in self.observed_state['hand']])
+        print ("The briscola is ", self.briscola.name)
+        print ("Your hand is: ", [card.name for card in self.hand])
 
         try:
             action=int(input('Input:'))

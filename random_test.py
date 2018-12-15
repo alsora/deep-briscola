@@ -7,7 +7,7 @@ import environment as brisc
 
 def main(argv=None):
     # Initializing the environment
-    game = brisc.BriscolaGame(  verbosity=brisc.LoggerLevels.DEBUG)
+    game = brisc.BriscolaGame(2,verbosity=brisc.LoggerLevels.DEBUG)
     deck = game.deck
 
     # Initialize agents

@@ -10,7 +10,7 @@ import environment as brisc
 # ==================================================
 
 # Model directory
-tf.flags.DEFINE_string("model_dir", "", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
+tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
@@ -22,6 +22,10 @@ tf.flags.DEFINE_float("epsilon_increment", 5e-6, "How much epsilon is increased 
 tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremental epsilon (default: 0.85)")
 tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.85)")
 
+# Network parameters
+tf.flags.DEFINE_float("learning_rate", 1e-4, "The learning rate for the network updates (default: 1e-4)")
+
+
 # Evaluation parameters
 tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
 tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate on these many episodes for each test (default: 500)")
@@ -32,7 +36,7 @@ FLAGS = tf.flags.FLAGS
 def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(verbosity=brisc.LoggerLevels.TRAIN)
+    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
 
     # Initialize agents
     agents = []
@@ -45,21 +49,20 @@ def main(argv=None):
     for epoch in range(1, FLAGS.num_epochs + 1):
         print ("Epoch: ", epoch, end='\r')
 
-        game.reset()
         game_winner_id, winner_points = play_episode(game, agents)
 
         if epoch % FLAGS.evaluate_every == 0:
-            winning_ratio = evaluate(game, agents, FLAGS.num_evaluations)
-            if winning_ratio > best_winning_ratio:
-                best_winning_ratio = winning_ratio
+            victory_rates, average_points = evaluate(game, agents, FLAGS.num_evaluations)
+            print("DeepAgent wins ", victory_rates[0], "% with average points ", average_points[0])
+            if victory_rates[0] > best_winning_ratio:
+                best_winning_ratio = victory_rates[0]
                 agents[0].save_model(FLAGS.model_dir)
 
 
 
 def play_episode(game, agents):
 
-    deck = game.deck
-
+    game.reset()
     keep_playing = True
     while keep_playing:
 
@@ -70,7 +73,7 @@ def play_episode(game, agents):
             player = game.players[player_id]
             agent = agents[player_id]
             # agent observes state before acting
-            agent.observe(game, player, deck)
+            agent.observe(game, player, game.deck)
             available_actions = game.get_player_actions(player_id)
             action = agent.select_action(available_actions)
 
@@ -82,7 +85,7 @@ def play_episode(game, agents):
             player = game.players[player_id]
             agent = agents[player_id]
             # agent observes new state after acting
-            agent.observe(game, player, deck)
+            agent.observe(game, player, game.deck)
 
             reward = rewards[i]
             agent.update(reward)
@@ -95,9 +98,10 @@ def play_episode(game, agents):
 
 def evaluate(game, agents, num_evaluations):
 
-    deck = game.deck
-    total_wins = [0, 0]
-    total_points = [0, 0]
+    total_wins = [0] * len(agents)
+    total_points = [0] * len(agents)
+    victory_rates = [0] * len(agents)
+    average_points = [0] * len(agents)
 
     for _ in range(num_evaluations):
 
@@ -112,7 +116,7 @@ def evaluate(game, agents, num_evaluations):
                 player = game.players[player_id]
                 agent = agents[player_id]
 
-                agent.observe(game, player, deck)
+                agent.observe(game, player, game.deck)
                 available_actions = game.get_player_actions(player_id)
                 action = agent.select_action(available_actions)
 
@@ -125,15 +129,14 @@ def evaluate(game, agents, num_evaluations):
         game_winner_id, winner_points = game.end_game()
 
         total_wins[game_winner_id] += 1
-        total_points[game_winner_id] += winner_points
-        total_points[1 - game_winner_id] += (120 - winner_points)
+        for player in game.players:
+            total_points[player.id] += player.points
 
+    for player in game.players:
+        victory_rates[player.id] = (total_wins[player.id]/float(num_evaluations))*100
+        average_points[player.id] = float(total_points[player.id])/float(num_evaluations)
 
-    victory_rate = (total_wins[0]/float(num_evaluations))*100
-    average_points = float(total_points[0])/float(num_evaluations)
-    print("DeepAgent wins ", victory_rate, "% with average points ", average_points)
-
-    return victory_rate
+    return victory_rates, average_points
 
 
 

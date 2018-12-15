@@ -17,9 +17,8 @@ FLAGS = tf.flags.FLAGS
 
 def main(argv=None):
 
-
     # Initializing the environment
-    game = brisc.BriscolaGame(brisc.LoggerLevels.PVP)
+    game = brisc.BriscolaGame(2,brisc.LoggerLevels.PVP)
     deck = game.deck
 
     # Initialize agents

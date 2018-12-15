@@ -1,14 +1,10 @@
 from hyperopt import hp, tpe, fmin, space_eval
 import tensorflow as tf
 
-import pickle
-import os
-import traceback
-
-import train
 from agents.deep_agent import DeepAgent
 from agents_base.random_agent import RandomAgent
 import environment as brisc
+import train
 
 
 space = {
@@ -29,8 +25,7 @@ def train_agent(hype_space):
     print("----------------------")
     print("Evaluating model: ", hype_space)
 
-    game = brisc.BriscolaGame(verbosity=brisc.LoggerLevels.TRAIN)
-    deck = game.deck
+    game = brisc.BriscolaGame(2,verbosity=brisc.LoggerLevels.TRAIN)
     tf.reset_default_graph()
 
     # Initialize agents
@@ -48,9 +43,9 @@ def train_agent(hype_space):
         game_winner_id, winner_points = train.play_episode(game, agents)
 
         if epoch % EVALUATE_EVERY == 0:
-            winning_ratio = train.evaluate(game, agents, EVALUATE_FOR)
-            if winning_ratio > best_winning_ratio:
-                best_winning_ratio = winning_ratio
+            winning_ratios, _ = train.evaluate(game, agents, EVALUATE_FOR)
+            if winning_ratios[0] > best_winning_ratio:
+                best_winning_ratio = winning_ratios[0]
                 agents[0].save_model(OUTPUT_DIR)
 
     print ("Best winning ratio ----->", best_winning_ratio)
@@ -60,7 +55,6 @@ def train_agent(hype_space):
 
 
 if __name__ == "__main__":
-
 
     # returns list of indices of parameter choices
     best_model = fmin(
