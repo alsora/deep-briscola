@@ -230,6 +230,7 @@ class BriscolaGame:
         self.PVP_logger("Player ", player_id, " played ", card.name)
 
         self.played_cards.append(card)
+        self.history.append(card)
 
 
     def get_rewards_from_step(self):
@@ -246,6 +247,8 @@ class BriscolaGame:
             player = self.players[player_id]
 
             reward = points if player_id is winner_player_id else -points
+            #reward = points if player_id is winner_player_id else 0
+            #reward = 0
             #if game_winner_id >= 0:
                 #game_end_reward = player.points - 60
                 #reward += game_end_reward
@@ -273,15 +276,15 @@ class BriscolaGame:
 
     @staticmethod
     def get_strongest_card(briscola_seed, cards):
-
+        ''' Get the strongest card in the provided set'''
         ordered_winner_id = 0
         strongest_card = cards[0]
 
-        for ordered_player_id, card in enumerate(cards[1:]):
-            ordered_player_id += 1 # adjustment since we are starting from firsr element
+        for ordered_id, card in enumerate(cards[1:]):
+            ordered_id += 1 # adjustment since we are starting from firsr element
             pair_winner = BriscolaGame.scoring(briscola_seed, strongest_card, card)
             if pair_winner is 1:
-                ordered_winner_id = ordered_player_id
+                ordered_winner_id = ordered_id
                 strongest_card = card
 
         return ordered_winner_id, strongest_card
@@ -289,14 +292,15 @@ class BriscolaGame:
 
     @staticmethod
     def get_weakest_card(briscola_seed, cards):
-
+        ''' Get the weakest card in the provided set'''
         ordered_loser_id = 0
         weakest_card = cards[0]
 
-        for ordered_player_id, card in enumerate(cards[1:]):
+        for ordered_id, card in enumerate(cards[1:]):
+            ordered_id += 1 # adjustment since we are starting from firsr element
             pair_winner = BriscolaGame.scoring(briscola_seed, weakest_card, card, keep_order=False)
             if pair_winner is 0:
-                ordered_loser_id = ordered_player_id
+                ordered_loser_id = ordered_id
                 weakest_card = card
 
         return ordered_loser_id, weakest_card

@@ -18,7 +18,7 @@ space = {
 NUM_EPOCHS=50 * 1000
 EVALUATE_EVERY=10 * 1000
 EVALUATE_FOR=1000
-OUTPUT_DIR='hyperopt_best_model'
+MODEL_DIR='hyperopt_best_model'
 
 def train_agent(hype_space):
 
@@ -30,23 +30,14 @@ def train_agent(hype_space):
 
     # Initialize agents
     agents = []
-    agent = DeepAgent(hype_space['epsilon'], hype_space['epsilon_increment'], hype_space['epsilon_max'], hype_space['discount'])
+    agent = DeepAgent(
+        hype_space['epsilon'], hype_space['epsilon_increment'], hype_space['epsilon_max'], hype_space['discount'],
+        hype_space['learning_rate'])
+
     agents.append(agent)
-    agent = RandomAgent()
-    agents.append(agent)
+    agents.append(RandomAgent())
 
-    best_winning_ratio = -1
-    for epoch in range(1, NUM_EPOCHS + 1):
-        print ("Epoch: ", epoch, end='\r')
-
-        game.reset()
-        game_winner_id, winner_points = train.play_episode(game, agents)
-
-        if epoch % EVALUATE_EVERY == 0:
-            winning_ratios, _ = train.evaluate(game, agents, EVALUATE_FOR)
-            if winning_ratios[0] > best_winning_ratio:
-                best_winning_ratio = winning_ratios[0]
-                agents[0].save_model(OUTPUT_DIR)
+    best_winning_ratio = train.train(game, agents, NUM_EPOCHS, EVALUATE_EVERY, EVALUATE_FOR, MODEL_DIR)
 
     print ("Best winning ratio ----->", best_winning_ratio)
     min_losing_ratio = 100 - best_winning_ratio

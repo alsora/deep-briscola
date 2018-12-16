@@ -40,24 +40,36 @@ def main(argv=None):
 
     # Initialize agents
     agents = []
-    agent = DeepAgent(FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount)
+    agent = DeepAgent(
+        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
+        FLAGS.learning_rate)
     agents.append(agent)
     agent = RandomAgent()
     agents.append(agent)
 
+    train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
+
+
+def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
+
     best_winning_ratio = -1
-    for epoch in range(1, FLAGS.num_epochs + 1):
+    for epoch in range(1, num_epochs + 1):
         print ("Epoch: ", epoch, end='\r')
 
         game_winner_id, winner_points = play_episode(game, agents)
 
-        if epoch % FLAGS.evaluate_every == 0:
-            victory_rates, average_points = evaluate(game, agents, FLAGS.num_evaluations)
-            print("DeepAgent wins ", victory_rates[0], "% with average points ", average_points[0])
+        if epoch % evaluate_every == 0:
+            for agent in agents:
+                agent.make_greedy()
+            victory_rates, average_points = evaluate(game, agents, num_evaluations)
+            for agent in agents:
+                agent.restore_epsilon()
+            print("DeepAgent wins ", "{:.2f}".format(victory_rates[0]), "% with average points ", "{:.2f}".format(average_points[0]))
             if victory_rates[0] > best_winning_ratio:
                 best_winning_ratio = victory_rates[0]
-                agents[0].save_model(FLAGS.model_dir)
+                agents[0].save_model(model_dir)
 
+    return best_winning_ratio
 
 
 def play_episode(game, agents):

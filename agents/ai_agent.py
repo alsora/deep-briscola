@@ -13,6 +13,7 @@ class AIAgent:
     def observe(self, game, player, deck):
         ''' store information about the state of the game to be used in the decisional process'''
         self.hand = player.hand
+        self.points = player.points
         self.played_cards = game.played_cards
         self.briscola_seed = game.briscola.seed
 
@@ -41,10 +42,15 @@ class AIAgent:
                 best_action = sorted_win_actions[0]
                 best_card = self.hand[best_action]
 
+                if self.points + points_on_table + best_card.points > 60:
+                    # if winning this hand I can win the game, do it
+                    return best_action
+
                 # if I can win without using a briscola, do it
                 for win_action in sorted_win_actions:
                     if self.hand[win_action].seed != self.briscola_seed:
                         return win_action
+
                 # if I am here, all the cards which allow me to win the hand are briscola
                 if len(win_actions) == 1:
                     # if I have only one card for winning the hand (which is a briscola)
@@ -94,4 +100,12 @@ class AIAgent:
 
 
     def update(self, reward):
+        pass
+
+
+    def make_greedy(self):
+        pass
+
+
+    def restore_epsilon(self):
         pass

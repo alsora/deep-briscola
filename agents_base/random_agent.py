@@ -15,3 +15,9 @@ class RandomAgent:
 
     def update(self, reward):
         pass
+
+    def make_greedy(self):
+        pass
+
+    def restore_epsilon(self):
+        pass

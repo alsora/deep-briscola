@@ -18,7 +18,7 @@ FLAGS = tf.flags.FLAGS
 def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2,brisc.LoggerLevels.PVP)
+    game = brisc.BriscolaGame(2,brisc.LoggerLevels.DEBUG)
     deck = game.deck
 
     # Initialize agents
@@ -28,6 +28,7 @@ def main(argv=None):
     if FLAGS.model_dir:
         agent = DeepAgent()
         agent.load_model(FLAGS.model_dir)
+        agent.make_greedy()
         agents.append(agent)
     else:
         agent = AIAgent()

@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-import itertools, time, random, os, shutil
+import random, os, shutil
 
 
 class ReplayMemory:
@@ -18,7 +18,11 @@ class ReplayMemory:
         # get the index where to insert the event
         index = self.memory_counter % self.capacity
         self.memory[index, :] = event
+
+        # increment memory_counter avoiding overflow
         self.memory_counter += 1
+        if self.memory_counter == (self.capacity * 2):
+            self.memory_counter = self.capacity
 
     def sample(self, batch_size):
 
@@ -38,12 +42,12 @@ class ReplayMemory:
 
 class DeepAgent:
 
-    def __init__(self, n_actions, n_features):
+    def __init__(self, n_actions, n_features, learning_rate = 1e-3):
 
         # network parameters
         self.n_features = n_features
         self.n_actions = n_actions
-        self.learning_rate = 1e-4
+        self.learning_rate = learning_rate
         self.batch_size = 100
         self.replace_target_iter = 2000
 
@@ -67,7 +71,7 @@ class DeepAgent:
 
     def create_network(self):
 
-        # ------------------ all inputs ------------------------
+        # input placeholders
         self.s = tf.placeholder(tf.float32, [None, self.n_features], name='states')  # input State
         self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
         self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
@@ -75,7 +79,7 @@ class DeepAgent:
 
         w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
-        # ------------------ build evaluate_net ------------------
+        # evaluation network
         with tf.variable_scope('eval_net'):
             e1 = tf.layers.dense(self.s, 32, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e1')
@@ -86,10 +90,10 @@ class DeepAgent:
             e4 = tf.layers.dense(e3, 32, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e4')
 
-            self.q_eval = tf.layers.dense(e4, self.n_actions, kernel_initializer=w_initializer,
-                                            bias_initializer=b_initializer, name='q1')
+            self.q = tf.layers.dense(e4, self.n_actions, kernel_initializer=w_initializer,
+                                            bias_initializer=b_initializer, name='q')
 
-        # ------------------ build target_net ------------------
+        # target network
         with tf.variable_scope('target_net'):
             t1 = tf.layers.dense(self.s_, 32, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='t1')
@@ -101,21 +105,23 @@ class DeepAgent:
                                     bias_initializer=b_initializer, name='t4')
 
             self.q_next = tf.layers.dense(t4, self.n_actions, kernel_initializer=w_initializer,
-                                            bias_initializer=b_initializer, name='q2')
+                                            bias_initializer=b_initializer, name='q_next')
 
         with tf.variable_scope('predictions'):
             # predicted actions according to evaluation network
-            self.predictions = tf.argmax(self.q_eval, 1, output_type=tf.int32, name="argmax")
+            self.argmax_action = tf.argmax(self.q, 1, output_type=tf.int32, name="argmax")
         with tf.variable_scope('q_target'):
             # discounted reward on the target network
-            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='Qmax_s_')
+            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
+            # stop gradient to avoid updating target network
             self.q_target = tf.stop_gradient(q_target)
-        with tf.variable_scope('q_eval'):
+        with tf.variable_scope('q_wrt_a'):
+            # q value of chosen action
             a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
-            self.q_eval_wrt_a = tf.gather_nd(params=self.q_eval, indices=a_indices)
+            self.q_wrt_a = tf.gather_nd(params=self.q, indices=a_indices)
         with tf.variable_scope('loss'):
-            # loss computed as difference between predicted q[a] and q_target
-            self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval_wrt_a, name='TD_error'))
+            # loss computed as difference between predicted q[a] and (current_reward + discount * q_target[best_future_action])
+            self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_wrt_a, name='td_error'))
         with tf.variable_scope('train'):
             opt = tf.train.AdamOptimizer(self.learning_rate)
             grads_and_vars = opt.compute_gradients(self.loss)
@@ -125,7 +131,7 @@ class DeepAgent:
         e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
 
         with tf.variable_scope('hard_replacement'):
-            # operator for assiging target network weights to the evaluation network
+            # operator for assiging evaluation network weights to the target network
             self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
 
