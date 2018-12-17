@@ -59,6 +59,10 @@ class DRQN:
         self.trace_length = 3
         self.replace_target_iter = 2000
 
+        # layers parameters
+        self.lstm_layers = [128,64]
+
+
         # init vars
         self.learn_step_counter = 0
         self.wrong_move = False
@@ -84,20 +88,16 @@ class DRQN:
         self.events_length = tf.placeholder(dtype=tf.int32)
         w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
-        number_of_layers = 1
-        number_of_cells = 128
-
         # evaluation network
         with tf.variable_scope('eval_net'):
 
 
             rnn_s = tf.reshape(tf.contrib.slim.flatten(self.s),[-1,self.events_length, self.n_features])
-            rnn_cells_e = tf.nn.rnn_cell.LSTMCell(number_of_cells)
-            rnn_multi_cells_e = tf.contrib.rnn.MultiRNNCell([rnn_cells_e] * number_of_layers)
+            rnn_multi_cells_e = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
 
             rnn_output_e, _ = tf.nn.dynamic_rnn(
                 rnn_multi_cells_e, rnn_s, dtype=tf.float32)
-            rnn_output_e = tf.reshape(rnn_output_e,shape=[-1,number_of_cells])
+            rnn_output_e = tf.reshape(rnn_output_e,shape=[-1, self.lstm_layers[-1]])
 
             e1 = tf.layers.dense(rnn_output_e, 64, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e1')
@@ -112,12 +112,11 @@ class DRQN:
         with tf.variable_scope('target_net'):
 
             rnn_s_ = tf.reshape(tf.contrib.slim.flatten(self.s_),[-1,self.events_length, self.n_features])
-            cells_t = tf.nn.rnn_cell.LSTMCell(number_of_cells)
-            multi_cells_t = tf.contrib.rnn.MultiRNNCell([cells_t] * number_of_layers)
+            multi_cells_t = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
 
             rnn_output_t, _ = tf.nn.dynamic_rnn(
                 multi_cells_t, rnn_s_, dtype=tf.float32)
-            rnn_output_t = tf.reshape(rnn_output_t,shape=[-1,number_of_cells])
+            rnn_output_t = tf.reshape(rnn_output_t,shape=[-1, self.lstm_layers[-1]])
 
 
             t1 = tf.layers.dense(rnn_output_t, 64, tf.nn.relu, kernel_initializer=w_initializer,
