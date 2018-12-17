@@ -91,21 +91,15 @@ class DRQN:
         with tf.variable_scope('eval_net'):
 
 
-            self.rnn_s = tf.reshape(tf.contrib.slim.flatten(self.s),[-1,self.events_length, self.n_features])
+            rnn_s = tf.reshape(tf.contrib.slim.flatten(self.s),[-1,self.events_length, self.n_features])
+            rnn_cells_e = tf.nn.rnn_cell.LSTMCell(number_of_cells)
+            rnn_multi_cells_e = tf.contrib.rnn.MultiRNNCell([rnn_cells_e] * number_of_layers)
 
-            print("rnn_s--->", self.rnn_s)
+            rnn_output_e, _ = tf.nn.dynamic_rnn(
+                rnn_multi_cells_e, rnn_s, dtype=tf.float32)
+            rnn_output_e = tf.reshape(rnn_output_e,shape=[-1,number_of_cells])
 
-            cells = tf.nn.rnn_cell.LSTMCell(number_of_cells)
-            multi_cells = tf.contrib.rnn.MultiRNNCell([cells] * number_of_layers)
-            print("cells--->", cells)
-            print("multi_cells--->", multi_cells)
-
-            rnn_output, _ = tf.nn.dynamic_rnn(
-                multi_cells, self.rnn_s, dtype=tf.float32)
-
-            rnn_output = tf.reshape(rnn_output,shape=[-1,number_of_cells])
-
-            e1 = tf.layers.dense(rnn_output, 64, tf.nn.relu, kernel_initializer=w_initializer,
+            e1 = tf.layers.dense(rnn_output_e, 64, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e1')
             e2 = tf.layers.dense(e1, 32, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e2')
@@ -117,14 +111,12 @@ class DRQN:
         # target network
         with tf.variable_scope('target_net'):
 
-            self.rnn_s_ = tf.reshape(tf.contrib.slim.flatten(self.s_),[-1,self.events_length, self.n_features])
-
+            rnn_s_ = tf.reshape(tf.contrib.slim.flatten(self.s_),[-1,self.events_length, self.n_features])
             cells_t = tf.nn.rnn_cell.LSTMCell(number_of_cells)
-            multi_cells_t = tf.contrib.rnn.MultiRNNCell([cells] * number_of_layers)
+            multi_cells_t = tf.contrib.rnn.MultiRNNCell([cells_t] * number_of_layers)
 
             rnn_output_t, _ = tf.nn.dynamic_rnn(
-                multi_cells_t, self.rnn_s_, dtype=tf.float32)
-
+                multi_cells_t, rnn_s_, dtype=tf.float32)
             rnn_output_t = tf.reshape(rnn_output_t,shape=[-1,number_of_cells])
 
 
@@ -159,13 +151,10 @@ class DRQN:
         t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
         e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
 
+
         with tf.variable_scope('hard_replacement'):
-
-            self.shape_t_op = [tf.shape(t) for t in t_params]
-            self.shape_e_op = [tf.shape(e) for e in e_params]
-
             # operator for assiging evaluation network weights to the target network
-            self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params[2:])]
+            self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
     def get_q_table(self, state):
             ''' Compute q table for current state'''
@@ -210,11 +199,6 @@ class DRQN:
 
         # check if it's time to copy the target network into the evaluation network
         if self.learn_step_counter % self.replace_target_iter == 0:
-            t, e = self.session.run([self.shape_t_op, self.shape_e_op])
-            #print (t)
-            #print ("-----------")
-            #print (e)
-            #print("ciao")
             self.session.run(self.target_replace_op)
             print("Loss: ", loss)
 
