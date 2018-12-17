@@ -6,6 +6,7 @@ import tensorflow as tf
 import itertools, time, random, os, shutil
 
 from networks.dqn import DQN
+from networks.drqn import DRQN
 
 
 class QAgent():
@@ -26,7 +27,7 @@ class QAgent():
         self.reward = None
 
         # create q learning algorithm
-        self.q_learning = DQN(self.n_actions, self.n_features, learning_rate, discount)
+        self.q_learning = DRQN(self.n_actions, self.n_features, learning_rate, discount)
 
 
         self.count_wrong_moves = 0
