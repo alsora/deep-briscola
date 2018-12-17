@@ -5,10 +5,10 @@ import numpy as np
 import tensorflow as tf
 import itertools, time, random, os, shutil
 
-from agents_base.deep_agent import DeepAgent as DeepAgentBase
+from networks.dqn import DQN
 
 
-class DeepAgent(DeepAgentBase):
+class QAgent():
     ''' Trainable agent which uses a neural network to determine best action'''
 
     def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95, learning_rate = 1e-3):
@@ -19,8 +19,15 @@ class DeepAgent(DeepAgentBase):
         self.epsilon_backup = epsilon
         self.epsilon_increment = epsilon_increment
         self.gamma = discount
-        # initialize super class with neural network implementation
-        super().__init__(self.n_actions, self.n_features, learning_rate)
+
+        self.last_state = None
+        self.state = None
+        self.action = None
+        self.reward = None
+
+        # create q learning algorithm
+        self.q_learning = DQN(self.n_actions, self.n_features, learning_rate, discount)
+
 
         self.count_wrong_moves = 0
 
@@ -29,10 +36,10 @@ class DeepAgent(DeepAgentBase):
         ''' create an encoded state representation of the game to be fed into the neural network
             the state is composed of 5 cards (3 in hand, 1 played card on table, 1 briscola)
             each card is array of size 14, separating one hot encoded number and seed i.e. [number_one_hot, seed_one_hot]
+            if there are no cards at a particular location, the array is all zeros.
         '''
 
-        # the state is array of size 70
-        state=np.zeros(70)
+        state=np.zeros(self.n_features)
         # add hand to state
         for i, card in enumerate(player.hand):
             number_index = i * 14 + card.number
@@ -50,6 +57,11 @@ class DeepAgent(DeepAgentBase):
         state[number_index] = 1
         seed_index = 4 * 14 + 10 + game.briscola.seed
         state[seed_index] = 1
+        # add seen cards
+        #for card in game.history:
+            #card_index = 5 * 14 + card.id
+            #state[card_index] = 1
+
 
         self.last_state = self.state
         self.state = state
@@ -65,15 +77,7 @@ class DeepAgent(DeepAgentBase):
             # select action randomly with probability (1 - epsilon)
             action = np.random.choice(available_actions)
         else:
-            # select action that maximize q value expectation with probability (epsilon)
-            states_op = self.session.graph.get_operation_by_name("states").outputs[0]
-            argmax_op = self.session.graph.get_operation_by_name("predictions/argmax").outputs[0]
-            q_op = self.session.graph.get_operation_by_name("eval_net/q/BiasAdd").outputs[0]
-
-            input_state = np.expand_dims(self.state, axis=0)
-            argmax, q = self.session.run([argmax_op, q_op], feed_dict={states_op: input_state})
-
-            q = q[0]
+            q = self.q_learning.get_q_table(self.state)
             # sort actions from highest to lowest predicted q value
             sorted_actions = (-q).argsort()
 
@@ -90,6 +94,31 @@ class DeepAgent(DeepAgentBase):
         self.action = action
         return action
 
+
+    def update(self, reward):
+        ''' After receiving a reward the agent has all collected [s, a, r, s_]'''
+
+        '''
+        if self.wrong_move:
+            # reduce the reward if the agent's last move has been a not allowed move
+            self.reward = -10
+            self.wrong_move = False
+        else:
+            self.reward = reward
+        '''
+        # update last reward
+        self.reward = reward
+        # update epsilon grediness
+        self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
+
+        self.q_learning.learn(self.last_state, self.action, self.reward, self.state)
+
+
+    def save_model(self, output_dir):
+        self.q_learning.save_model(output_dir)
+
+    def load_model(self, saved_model_dir):
+        self.q_learning.load_model(saved_model_dir)
 
     def make_greedy(self):
         self.epsilon_backup = self.epsilon

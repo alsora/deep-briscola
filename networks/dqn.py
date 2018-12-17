@@ -40,14 +40,15 @@ class ReplayMemory:
         return min(self.capacity, self.memory_counter)
 
 
-class DeepAgent:
+class DQN:
 
-    def __init__(self, n_actions, n_features, learning_rate = 1e-3):
+    def __init__(self, n_actions, n_features, learning_rate = 1e-3, discount = 0.85):
 
         # network parameters
         self.n_features = n_features
         self.n_actions = n_actions
         self.learning_rate = learning_rate
+        self.gamma = discount
         self.batch_size = 100
         self.replace_target_iter = 2000
 
@@ -55,10 +56,6 @@ class DeepAgent:
         self.learn_step_counter = 0
         self.wrong_move = False
         self.session = None
-        self.last_state = None
-        self.state = None
-        self.action = None
-        self.reward = None
 
         # create replay memroy
         capacity = 10000
@@ -134,24 +131,23 @@ class DeepAgent:
             # operator for assiging evaluation network weights to the target network
             self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
+    def get_q_table(self, state):
+            ''' Compute q table for current state'''
 
-    def update(self, reward):
-        ''' After receiving a reward the agent has all collected [s, a, r, s_]'''
-        '''
-        if self.wrong_move:
-            # reduce the reward if the agent's last move has been a not allowed move
-            self.reward = -10
-            self.wrong_move = False
-        else:
-            self.reward = reward
-        '''
-        # update last reward
-        self.reward = reward
-        # update epsilon grediness
-        self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
+            states_op = self.session.graph.get_operation_by_name("states").outputs[0]
+            #argmax_op = self.session.graph.get_operation_by_name("predictions/argmax").outputs[0]
+            q_op = self.session.graph.get_operation_by_name("eval_net/q/BiasAdd").outputs[0]
+
+            input_state = np.expand_dims(state, axis=0)
+            q = self.session.run([q_op], feed_dict={states_op: input_state})
+
+            return q[0][0]
+
+
+    def learn(self, last_state, action, reward, state):
 
         # I have a full event [s, a, r, s_], push it into replay memory
-        self.replay_memory.push(self.last_state, self.action, self.reward, self.state)
+        self.replay_memory.push(last_state, action, reward, state)
 
         if self.replay_memory.size() < self.batch_size:
             # there are not enough samples for a training step in the replay memory
@@ -172,9 +168,10 @@ class DeepAgent:
         # check if it's time to copy the target network into the evaluation network
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.session.run(self.target_replace_op)
-            print("Loss: ", loss, " Epsilon: ", self.epsilon)
+            print("Loss: ", loss)
 
         self.learn_step_counter += 1
+
 
 
     def initialize_session(self):

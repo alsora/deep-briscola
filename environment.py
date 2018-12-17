@@ -246,8 +246,8 @@ class BriscolaGame:
         for player_id in self.get_players_order():
             player = self.players[player_id]
 
-            reward = points if player_id is winner_player_id else -points
-            #reward = points if player_id is winner_player_id else 0
+            #reward = points if player_id is winner_player_id else -points
+            reward = points if player_id is winner_player_id else 0
             #reward = 0
             #if game_winner_id >= 0:
                 #game_end_reward = player.points - 60

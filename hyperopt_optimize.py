@@ -1,17 +1,17 @@
 from hyperopt import hp, tpe, fmin, space_eval
 import tensorflow as tf
 
-from agents.deep_agent import DeepAgent
-from agents_base.random_agent import RandomAgent
+from agents.q_agent import QAgent
+from agents.random_agent import RandomAgent
 import environment as brisc
 import train
 
 
 space = {
-    'discount': hp.uniform('discount', 0.65, 1.0),
-    'epsilon': hp.choice('epsilon', [0, 0.5, 0.75]),
+    'discount': hp.choice('discount', [0.25, 0.75, 0.85, 0.9, 0.95]),
+    'epsilon': hp.choice('epsilon', [0, 0.75]),
     'epsilon_increment' : hp.choice('epsilon_increment', [1e-8, 1e-7, 5e-6, 1e-6, 1e-5]),
-    'epsilon_max' : hp.choice('epsilon_max', [0.8, 0.85, 0.9, 0.95, 0.99]),
+    'epsilon_max' : hp.choice('epsilon_max', [0.8, 0.85, 0.9, 0.95]),
     'learning_rate' : hp.choice('learning_rate', [1e-5, 1e-4, 1e-3])
 }
 
@@ -30,7 +30,7 @@ def train_agent(hype_space):
 
     # Initialize agents
     agents = []
-    agent = DeepAgent(
+    agent = QAgent(
         hype_space['epsilon'], hype_space['epsilon_increment'], hype_space['epsilon_max'], hype_space['discount'],
         hype_space['learning_rate'])
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         train_agent,
         space,
         algo=tpe.suggest,
-        max_evals=250
+        max_evals=100
     )
 
     print(best_model)

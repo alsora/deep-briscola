@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from agents.ai_agent import AIAgent
-from agents.deep_agent import DeepAgent
+from agents.q_agent import QAgent
 from agents.human_agent import HumanAgent
 
 import environment as brisc
@@ -26,7 +26,7 @@ def main(argv=None):
     agents.append(HumanAgent())
 
     if FLAGS.model_dir:
-        agent = DeepAgent()
+        agent = QAgent()
         agent.load_model(FLAGS.model_dir)
         agent.make_greedy()
         agents.append(agent)

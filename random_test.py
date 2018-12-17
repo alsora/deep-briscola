@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from agents_base.random_agent import RandomAgent
+from agents.random_agent import RandomAgent
 import environment as brisc
 
 

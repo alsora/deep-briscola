@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-from agents_base.random_agent import RandomAgent
-from agents.deep_agent import DeepAgent
+from agents.random_agent import RandomAgent
+from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
 import environment as brisc
 
@@ -40,7 +40,7 @@ def main(argv=None):
 
     # Initialize agents
     agents = []
-    agent = DeepAgent(
+    agent = QAgent(
         FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
         FLAGS.learning_rate)
     agents.append(agent)
