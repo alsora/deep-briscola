@@ -1,5 +1,5 @@
 import sys, os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 import numpy as np
 import tensorflow as tf
@@ -13,8 +13,8 @@ class QAgent():
     ''' Trainable agent which uses a neural network to determine best action'''
 
     def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95, learning_rate = 1e-3):
-        self.n_actions = 3
-        self.n_features = 70
+        self.n_actions = 9
+        self.n_features = 27
         self.epsilon_max = epsilon_max
         self.epsilon = epsilon
         self.epsilon_backup = epsilon
@@ -27,45 +27,27 @@ class QAgent():
         self.reward = None
 
         # create q learning algorithm
-        self.q_learning = DRQN(self.n_actions, self.n_features, learning_rate, discount)
+        self.q_learning = DQN(self.n_actions, self.n_features, learning_rate, discount)
 
-
+        self.last_wrong_move = False
         self.count_wrong_moves = 0
 
 
-    def observe(self, game, player, deck):
-        ''' create an encoded state representation of the game to be fed into the neural network
-            the state is composed of 5 cards (3 in hand, 1 played card on table, 1 briscola)
-            each card is array of size 14, separating one hot encoded number and seed i.e. [number_one_hot, seed_one_hot]
-            if there are no cards at a particular location, the array is all zeros.
-        '''
+    def observe(self, game, player_id):
+        self.board = game.board
+        self.id = player_id
 
         state=np.zeros(self.n_features)
-        # add hand to state
-        for i, card in enumerate(player.hand):
-            number_index = i * 14 + card.number
-            state[number_index] = 1
-            seed_index = i * 14 + 10 + card.seed
-            state[seed_index] = 1
-        # add played cards to state
-        for i, card in enumerate(game.played_cards):
-            number_index = (i + 3) * 14 + card.number
-            state[number_index] = 1
-            seed_index = (i + 3) * 14 + 10 + card.seed
-            state[seed_index] = 1
-        # add briscola to state
-        number_index = 4 * 14 + game.briscola.number
-        state[number_index] = 1
-        seed_index = 4 * 14 + 10 + game.briscola.seed
-        state[seed_index] = 1
-        # add seen cards
-        #for card in game.history:
-            #card_index = 5 * 14 + card.id
-            #state[card_index] = 1
-
+        # add my board
+        state[:9] = [1 if x == player_id else 0 for x in self.board]
+        # add opponent board
+        state[9:18] = [1 if x == (1 -player_id) else 0 for x in self.board]
+        # add complete board
+        state[18:27] = self.board
 
         self.last_state = self.state
         self.state = state
+
 
 
     def select_action(self, available_actions):
@@ -73,7 +55,8 @@ class QAgent():
 
         if self.state is None:
             raise ValueError("DeepAgent.select_action called before observing the state")
-
+        #print (self.state)
+        #print(self.epsilon)
         if np.random.uniform() > self.epsilon:
             # select action randomly with probability (1 - epsilon)
             action = np.random.choice(available_actions)
@@ -87,9 +70,14 @@ class QAgent():
                     action = predicted_action
                     break
 
-            #if action != argmax[0]:
-                #self.wrong_move = True
-                #self.count_wrong_moves += 1
+            if action != sorted_actions[0]:
+                self.last_wrong_move = True
+                self.count_wrong_moves += 1
+                action = np.random.choice(available_actions)
+
+            if self.count_wrong_moves == 500:
+                print ("500 wrong moves!")
+                self.count_wrong_moves = 0
 
         # store the chosen action
         self.action = action
@@ -99,14 +87,13 @@ class QAgent():
     def update(self, reward):
         ''' After receiving a reward the agent has all collected [s, a, r, s_]'''
 
-        '''
-        if self.wrong_move:
+        if self.last_wrong_move:
             # reduce the reward if the agent's last move has been a not allowed move
             self.reward = -10
-            self.wrong_move = False
+            self.last_wrong_move = False
         else:
             self.reward = reward
-        '''
+
         # update last reward
         self.reward = reward
         # update epsilon grediness
@@ -127,9 +114,3 @@ class QAgent():
 
     def restore_epsilon(self):
         self.epsilon = self.epsilon_backup
-
-    @staticmethod
-    def pad_to_n(state, n):
-        target_length = n
-        state = np.pad(state, (0, target_length - len(state)), 'constant')
-        return state

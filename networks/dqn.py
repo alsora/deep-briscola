@@ -49,8 +49,8 @@ class DQN:
         self.n_actions = n_actions
         self.learning_rate = learning_rate
         self.gamma = discount
-        self.batch_size = 100
-        self.replace_target_iter = 2000
+        self.batch_size = 50
+        self.replace_target_iter = 1000
 
         # init vars
         self.learn_step_counter = 0
@@ -58,7 +58,7 @@ class DQN:
         self.session = None
 
         # create replay memroy
-        capacity = 10000
+        capacity = 2500
         self.replay_memory = ReplayMemory(capacity, self.n_features)
 
         # create network
@@ -78,30 +78,22 @@ class DQN:
 
         # evaluation network
         with tf.variable_scope('eval_net'):
-            e1 = tf.layers.dense(self.s, 32, tf.nn.relu, kernel_initializer=w_initializer,
+            e1 = tf.layers.dense(self.s, 256, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e1')
-            e2 = tf.layers.dense(e1, 64, kernel_initializer=w_initializer,
+            e2 = tf.layers.dense(e1, 64, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e2')
-            e3 = tf.layers.dense(e2, 64, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e3')
-            e4 = tf.layers.dense(e3, 32, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e4')
 
-            self.q = tf.layers.dense(e4, self.n_actions, kernel_initializer=w_initializer,
+            self.q = tf.layers.dense(e2, self.n_actions, kernel_initializer=w_initializer,
                                             bias_initializer=b_initializer, name='q')
 
         # target network
         with tf.variable_scope('target_net'):
-            t1 = tf.layers.dense(self.s_, 32, tf.nn.relu, kernel_initializer=w_initializer,
+            t1 = tf.layers.dense(self.s_, 256, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='t1')
-            t2 = tf.layers.dense(t1, 64, kernel_initializer=w_initializer,
+            t2 = tf.layers.dense(t1, 64, tf.nn.relu, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='t2')
-            t3 = tf.layers.dense(t2, 64, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t3')
-            t4 = tf.layers.dense(t3, 32, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t4')
 
-            self.q_next = tf.layers.dense(t4, self.n_actions, kernel_initializer=w_initializer,
+            self.q_next = tf.layers.dense(t2, self.n_actions, kernel_initializer=w_initializer,
                                             bias_initializer=b_initializer, name='q_next')
 
         with tf.variable_scope('predictions'):

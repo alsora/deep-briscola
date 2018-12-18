@@ -4,7 +4,7 @@ from agents.ai_agent import AIAgent
 from agents.q_agent import QAgent
 from agents.human_agent import HumanAgent
 
-import environment as brisc
+import environment as tictac
 
 
 # Parameters
@@ -18,8 +18,7 @@ FLAGS = tf.flags.FLAGS
 def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2,brisc.LoggerLevels.DEBUG)
-    deck = game.deck
+    game = tictac.TicTacToeGame(2,tictac.LoggerLevels.DEBUG)
 
     # Initialize agents
     agents = []
@@ -34,8 +33,7 @@ def main(argv=None):
         agent = AIAgent()
         agents.append(agent)
 
-    # First reset of the environment
-    briscola = game.reset()
+    game.reset()
     keep_playing = True
 
     while keep_playing:
@@ -43,23 +41,27 @@ def main(argv=None):
         players_order = game.get_players_order()
         for player_id in players_order:
 
-            player = game.players[player_id]
             agent = agents[player_id]
-
-            agent.observe(game, player, deck)
+            # agent observes state before acting
+            agent.observe(game, player_id)
             available_actions = game.get_player_actions(player_id)
             action = agent.select_action(available_actions)
 
             game.play_step(action, player_id)
 
-        winner_player_id, points = game.evaluate_step()
+            win, draw = game.evaluate_step(player_id)
 
-        keep_playing = game.draw_step()
+            if win:
+                print ("player ", player_id, " wins!!")
+                keep_playing = False
+                break
+            elif draw:
+                print ("draw!!!")
+                keep_playing = False
+                count_draws += 1
+                break
 
-
-    game_winner_id, winner_points = game.end_game()
-
-
+    game.print_board(game.board)
 
 
 

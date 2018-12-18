@@ -1,14 +1,13 @@
 import tensorflow as tf
 
 from agents.random_agent import RandomAgent
-import environment as brisc
+import environment as tictac
 
 
 
 def main(argv=None):
     # Initializing the environment
-    game = brisc.BriscolaGame(2,verbosity=brisc.LoggerLevels.DEBUG)
-    deck = game.deck
+    game = tictac.TicTacToeGame(verbosity=tictac.LoggerLevels.DEBUG)
 
     # Initialize agents
     agents = []
@@ -18,28 +17,38 @@ def main(argv=None):
     # First reset of the environment
     game.reset()
     keep_playing = True
-
+    winner = -1
+    draw = False
     while keep_playing:
 
+        # action step
         players_order = game.get_players_order()
+        rewards = [0, 0]
         for player_id in players_order:
 
-            player = game.players[player_id]
             agent = agents[player_id]
-
-            agent.observe(game, player, deck)
+            # agent observes state before acting
+            agent.observe(game, player_id)
             available_actions = game.get_player_actions(player_id)
             action = agent.select_action(available_actions)
 
             game.play_step(action, player_id)
 
-        winner_player_id, points = game.evaluate_step()
+            if game.check_winner(game.board, player_id):
+                keep_playing = False
+                winner = player_id
+                break
+            elif game.check_board_full(game.board):
+                keep_playing = False
+                draw = True
+                break
 
-        keep_playing = game.draw_step()
+    if draw:
+        print ("Game ended with a draw!!")
+    else:
+        print ("Player ", winner, " wins the game!!")
 
-
-    game_winner_id, winner_points = game.end_game()
-
+    game.print_board(game.board)
 
 
 if __name__ == '__main__':

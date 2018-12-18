@@ -2,9 +2,7 @@ import tensorflow as tf
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
-from agents.ai_agent import AIAgent
-import environment as brisc
-
+import environment as tictac
 
 # Parameters
 # ==================================================
@@ -18,7 +16,7 @@ tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
 
 # Deep Agent parameters
 tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
-tf.flags.DEFINE_float("epsilon_increment", 5e-5, "How much epsilon is increased after each action taken up to epsilon_max (default: 5e-6)")
+tf.flags.DEFINE_float("epsilon_increment", 5e-4, "How much epsilon is increased after each action taken up to epsilon_max (default: 5e-6)")
 tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremented epsilon (default: 0.85)")
 tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.85)")
 
@@ -32,11 +30,10 @@ tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate on these many episodes
 
 FLAGS = tf.flags.FLAGS
 
-
 def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
+    game = tictac.TicTacToeGame(2, verbosity=tictac.LoggerLevels.TRAIN)
 
     # Initialize agents
     agents = []
@@ -61,10 +58,11 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
         if epoch % evaluate_every == 0:
             for agent in agents:
                 agent.make_greedy()
-            victory_rates, average_points = evaluate(game, agents, num_evaluations)
+            victory_rates, count_draws = evaluate(game, agents, num_evaluations)
             for agent in agents:
                 agent.restore_epsilon()
-            print("DeepAgent wins ", "{:.2f}".format(victory_rates[0]), "% with average points ", "{:.2f}".format(average_points[0]))
+            print("DeepAgent wins ", "{:.2f}".format(victory_rates[0]), "% with count_draws  ", count_draws)
+            print ("reward = ", (100* victory_rates[0] * num_evaluations/100.0 - victory_rates[1] * num_evaluations/100.0  + 10 * count_draws)/num_evaluations)
             if victory_rates[0] > best_winning_ratio:
                 best_winning_ratio = victory_rates[0]
                 agents[0].save_model(model_dir)
@@ -72,48 +70,57 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
     return best_winning_ratio
 
 
+
 def play_episode(game, agents):
 
     game.reset()
     keep_playing = True
+    winner_player_id = -1
     while keep_playing:
 
         # action step
         players_order = game.get_players_order()
+        rewards = [0, 0]
         for player_id in players_order:
 
-            player = game.players[player_id]
             agent = agents[player_id]
             # agent observes state before acting
-            agent.observe(game, player, game.deck)
+            agent.observe(game, player_id)
             available_actions = game.get_player_actions(player_id)
             action = agent.select_action(available_actions)
 
             game.play_step(action, player_id)
 
-        rewards = game.get_rewards_from_step()
+            win, draw = game.evaluate_step(player_id)
+
+            if win:
+                winner_player_id = player_id
+                rewards[player_id] = 100
+                rewards[1 - player_id] = -1
+                keep_playing = False
+                break
+            elif draw:
+                rewards[0] = rewards[1] = 0
+                keep_playing = False
+                break
+
         # update agents
-        for i, player_id in enumerate(players_order):
-            player = game.players[player_id]
+        for player_id in players_order:
             agent = agents[player_id]
             # agent observes new state after acting
-            agent.observe(game, player, game.deck)
-
-            reward = rewards[i]
+            agent.observe(game, player_id)
+            reward = rewards[player_id]
             agent.update(reward)
 
-        # update the environment
-        keep_playing = game.draw_step()
-
-    return game.end_game()
+    return winner_player_id, 0
 
 
 def evaluate(game, agents, num_evaluations):
 
     total_wins = [0] * len(agents)
-    total_points = [0] * len(agents)
     victory_rates = [0] * len(agents)
-    average_points = [0] * len(agents)
+
+    count_draws = 0
 
     for _ in range(num_evaluations):
 
@@ -125,30 +132,30 @@ def evaluate(game, agents, num_evaluations):
             players_order = game.get_players_order()
             for player_id in players_order:
 
-                player = game.players[player_id]
                 agent = agents[player_id]
-
-                agent.observe(game, player, game.deck)
+                # agent observes state before acting
+                agent.observe(game, player_id)
                 available_actions = game.get_player_actions(player_id)
                 action = agent.select_action(available_actions)
 
                 game.play_step(action, player_id)
 
-            winner_player_id, points = game.evaluate_step()
+                win, draw = game.evaluate_step(player_id)
 
-            keep_playing = game.draw_step()
+                if win:
+                  total_wins[player_id] += 1
+                  keep_playing = False
+                  break
+                elif draw:
+                  keep_playing = False
+                  count_draws += 1
+                  break
 
-        game_winner_id, winner_points = game.end_game()
+    print (total_wins)
+    for player_id in range(2):
+        victory_rates[player_id] = (total_wins[player_id]/float(num_evaluations))*100
 
-        total_wins[game_winner_id] += 1
-        for player in game.players:
-            total_points[player.id] += player.points
-
-    for player in game.players:
-        victory_rates[player.id] = (total_wins[player.id]/float(num_evaluations))*100
-        average_points[player.id] = float(total_points[player.id])/float(num_evaluations)
-
-    return victory_rates, average_points
+    return victory_rates, count_draws
 
 
 

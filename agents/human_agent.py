@@ -6,10 +6,10 @@ class HumanAgent:
     def __init__(self):
         pass
 
-    def observe(self, game, player, deck):
-        self.hand = player.hand
-        self.briscola = game.briscola
-        self.played_cards = game.played_cards
+    def observe(self, game, player_id):
+        self.board = game.board
+        self.id = player_id
+
 
     def select_action(self, actions):
         ''' parse user input from keyboard
@@ -17,8 +17,12 @@ class HumanAgent:
         '''
 
         print("Your turn!")
-        print ("The briscola is ", self.briscola.name)
-        print ("Your hand is: ", [card.name for card in self.hand])
+        print ("Your value is ", self.id)
+
+        self.board = [int(i) for i in self.board]
+        board_matrix = np.reshape(self.board, (3, 3))
+        print('\n'.join([''.join(['{:4}'.format(item) for item in row])
+            for row in board_matrix]))
 
         try:
             action=int(input('Input:'))
