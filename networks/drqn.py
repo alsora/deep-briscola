@@ -55,12 +55,12 @@ class DRQN:
         self.n_actions = n_actions
         self.learning_rate = learning_rate
         self.gamma = discount
-        self.batch_size = 2
-        self.trace_length = 3
-        self.replace_target_iter = 2000
+        self.batch_size = 25
+        self.trace_length = 5
+        self.replace_target_iter = 500
 
         # layers parameters
-        self.lstm_layers = [128,64]
+        self.lstm_layers = [256, 128]
 
 
         # init vars
@@ -91,17 +91,19 @@ class DRQN:
         # evaluation network
         with tf.variable_scope('eval_net'):
 
+            e1 = tf.layers.dense(self.s, 128, tf.nn.relu, kernel_initializer=w_initializer,
+                        bias_initializer=b_initializer, name='e1')
 
-            rnn_s = tf.reshape(tf.contrib.slim.flatten(self.s),[-1,self.events_length, self.n_features])
+
+            rnn_s = tf.reshape(tf.contrib.slim.flatten(e1),[-1,self.events_length, 128])
             rnn_multi_cells_e = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
 
             rnn_output_e, _ = tf.nn.dynamic_rnn(
                 rnn_multi_cells_e, rnn_s, dtype=tf.float32)
             rnn_output_e = tf.reshape(rnn_output_e,shape=[-1, self.lstm_layers[-1]])
 
-            e1 = tf.layers.dense(rnn_output_e, 64, tf.nn.relu, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e1')
-            e2 = tf.layers.dense(e1, 32, kernel_initializer=w_initializer,
+
+            e2 = tf.layers.dense(rnn_output_e, 32, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='e2')
 
             self.q = tf.layers.dense(e2, self.n_actions, kernel_initializer=w_initializer,
@@ -111,7 +113,10 @@ class DRQN:
         # target network
         with tf.variable_scope('target_net'):
 
-            rnn_s_ = tf.reshape(tf.contrib.slim.flatten(self.s_),[-1,self.events_length, self.n_features])
+            t1 = tf.layers.dense(self.s_, 128, tf.nn.relu, kernel_initializer=w_initializer,
+                        bias_initializer=b_initializer, name='t1')
+
+            rnn_s_ = tf.reshape(tf.contrib.slim.flatten(t1),[-1,self.events_length, 128])
             multi_cells_t = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
 
             rnn_output_t, _ = tf.nn.dynamic_rnn(
@@ -119,9 +124,8 @@ class DRQN:
             rnn_output_t = tf.reshape(rnn_output_t,shape=[-1, self.lstm_layers[-1]])
 
 
-            t1 = tf.layers.dense(rnn_output_t, 64, tf.nn.relu, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t1')
-            t2 = tf.layers.dense(t1, 32, kernel_initializer=w_initializer,
+
+            t2 = tf.layers.dense(rnn_output_t, 32, kernel_initializer=w_initializer,
                                     bias_initializer=b_initializer, name='t2')
 
             self.q_next = tf.layers.dense(t2, self.n_actions, kernel_initializer=w_initializer,
@@ -199,7 +203,7 @@ class DRQN:
         # check if it's time to copy the target network into the evaluation network
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.session.run(self.target_replace_op)
-            print("Loss: ", loss)
+            #print("Loss: ", loss)
 
         self.learn_step_counter += 1
 
