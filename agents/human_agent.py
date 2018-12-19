@@ -1,5 +1,8 @@
-import numpy as np
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
+import numpy as np
+import environment as tictac
 
 class HumanAgent:
 
@@ -19,10 +22,7 @@ class HumanAgent:
         print("Your turn!")
         print ("Your value is ", self.id)
 
-        self.board = [int(i) for i in self.board]
-        board_matrix = np.reshape(self.board, (3, 3))
-        print('\n'.join([''.join(['{:4}'.format(item) for item in row])
-            for row in board_matrix]))
+        tictac.TicTacToeGame.print_board(self.board)
 
         try:
             action=int(input('Input:'))

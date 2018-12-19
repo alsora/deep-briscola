@@ -34,6 +34,7 @@ class QAgent():
 
 
     def observe(self, game, player_id):
+        ''' store information about the state of the game to be used in the decisional process'''
         self.board = game.board
         self.id = player_id
 

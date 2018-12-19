@@ -37,11 +37,6 @@ class TicTacToeGame:
         self.players_order = self.get_players_order()
 
 
-    def get_player_actions(self, player_id):
-        ''' get list of available actions for a player'''
-        return [x for x in range(9) if self.is_space_free(self.board, x)]
-
-
     def get_players_order(self):
         ''' compute the clockwise players order starting from the current turn player'''
         players_order = [ i % self.num_players for i in range(self.turn_player, self.turn_player + self.num_players)]
@@ -76,6 +71,11 @@ class TicTacToeGame:
         board[index] = marker
 
     @staticmethod
+    def get_player_actions(board, player_id):
+        ''' get list of available actions for a player'''
+        return [x for x in range(9) if TicTacToeGame.is_space_free(board, x)]
+
+    @staticmethod
     def is_space_free(board, index):
         "checks for free space of the board"
         return board[index] == -1.0
@@ -102,6 +102,7 @@ class TicTacToeGame:
 
     @staticmethod
     def print_board(board):
+        board = [int(i) for i in board]
         board_matrix = np.reshape(board, (3, 3))
         print('\n'.join([''.join(['{:4}'.format(item) for item in row])
             for row in board_matrix]))

@@ -29,7 +29,7 @@ def main(argv=None):
             agent = agents[player_id]
             # agent observes state before acting
             agent.observe(game, player_id)
-            available_actions = game.get_player_actions(player_id)
+            available_actions = game.get_player_actions(game.board, player_id)
             action = agent.select_action(available_actions)
 
             game.play_step(action, player_id)
