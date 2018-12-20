@@ -238,20 +238,12 @@ class BriscolaGame:
 
         winner_player_id, points = self.evaluate_step()
 
-        #game_winner_id = -1
-        #if self.check_end_game():
-            #game_winner_id, _ = self.get_winner()
-
         rewards = []
         for player_id in self.get_players_order():
             player = self.players[player_id]
 
-            #reward = points if player_id is winner_player_id else -points
-            reward = points if player_id is winner_player_id else 0
-            #reward = 0
-            #if game_winner_id >= 0:
-                #game_end_reward = player.points - 60
-                #reward += game_end_reward
+            reward = points if player_id is winner_player_id else -points
+            #reward = points if player_id is winner_player_id else 0
 
             rewards.append(reward)
 
