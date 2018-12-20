@@ -89,7 +89,7 @@ class BriscolaDeck:
         '''Size of the current deck'''
         current_deck_size = len(self.current_deck)
         current_deck_size += 1 if self.briscola else 0
-        return len()
+        return current_deck_size
 
     '''
     def get_card(self, id):
