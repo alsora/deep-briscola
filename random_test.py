@@ -139,6 +139,18 @@ def main(argv=None):
     N = 1000
     point_0, winner_0, point_1, winner_1 = stats_gathering(RandomVsQ, N)
     stats_plotter(RandomVsQ, point_0, winner_0, point_1, winner_1)  
+    
+    
+    # Yet poorly trained agent vs Random agent
+    agent_dir = "saved_model/saved_model_500/"
+    Q = QAgent(); Q.load_model(agent_dir); Q.make_greedy();
+    RandomVsQ = []
+    RandomVsQ.append(RandomAgent())
+    RandomVsQ.append(Q)
+    # Stats 
+    N = 1000
+    point_0, winner_0, point_1, winner_1 = stats_gathering(RandomVsQ, N)
+    stats_plotter(RandomVsQ, point_0, winner_0, point_1, winner_1)  
 
 
     
