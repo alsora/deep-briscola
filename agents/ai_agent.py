@@ -7,7 +7,7 @@ import environment as brisc
 class AIAgent:
 
     def __init__(self):
-        pass
+        self.name = 'AIAgent'
 
 
     def observe(self, game, player, deck):

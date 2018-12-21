@@ -215,21 +215,19 @@ class BriscolaGame:
         return True
 
 
-    def play_step(self, action, player_id, logging = True):
+    def play_step(self, action, player_id):
         ''' a player executes a chosen action'''
 
         player = self.players[player_id]
 
-        if logging:
-            self.DEBUG_logger("Player ", player_id, " hand: ", [card.name for card in player.hand])
-            self.DEBUG_logger("Player ", player_id, " choose action ", action)
+        self.DEBUG_logger("Player ", player_id, " hand: ", [card.name for card in player.hand])
+        self.DEBUG_logger("Player ", player_id, " choose action ", action)
 
         card = player.play_card(action)
         if card is None:
             raise ValueError("player.play_card failed!")
 
-        if logging:
-            self.PVP_logger("Player ", player_id, " played ", card.name)
+        self.PVP_logger("Player ", player_id, " played ", card.name)
 
         self.played_cards.append(card)
         self.history.append(card)
