@@ -35,7 +35,7 @@ def main(argv=None):
         agents.append(agent)
 
     # First reset of the environment
-    briscola = game.reset()
+    game.reset()
     keep_playing = True
 
     while keep_playing:

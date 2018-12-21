@@ -1,9 +1,10 @@
+import os
 import tensorflow as tf
+import environment as brisc
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
-import environment as brisc
 
 
 # Parameters
@@ -14,7 +15,7 @@ tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained mo
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
+tf.flags.DEFINE_integer("num_epochs", 300, "Number of training epochs")
 
 # Deep Agent parameters
 tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
@@ -48,6 +49,10 @@ def main(argv=None):
     agents.append(agent)
 
     train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
+
+    directory = f"{FLAGS.model_dir}/{FLAGS.model_dir}_{FLAGS.num_epochs}"
+    os.makedirs(directory)
+    agents[0].save_model(directory)
 
 
 def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
