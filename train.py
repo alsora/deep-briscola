@@ -1,4 +1,6 @@
+import os
 import tensorflow as tf
+import environment as brisc
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
@@ -44,6 +46,10 @@ def main(argv=None):
     agents.append(agent)
 
     train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
+
+    directory = f"{FLAGS.model_dir}/{FLAGS.model_dir}_{FLAGS.num_epochs}"
+    os.makedirs(directory)
+    agents[0].save_model(directory)
 
 
 if __name__ == '__main__':
