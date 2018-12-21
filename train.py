@@ -15,7 +15,7 @@ tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained mo
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-tf.flags.DEFINE_integer("num_epochs", 300, "Number of training epochs")
+tf.flags.DEFINE_integer("num_epochs", 500, "Number of training epochs")
 
 # Deep Agent parameters
 tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")

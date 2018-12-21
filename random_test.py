@@ -1,4 +1,3 @@
-import tensorflow as tf
 import environment as brisc
 import matplotlib.pyplot as plt
 import numpy as np
@@ -142,12 +141,18 @@ def main(argv=None):
     stats_plotter(RandomVsQ, point_0, winner_0, point_1, winner_1)  
 
 
-
+    
 
 
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
+
 
 
 
