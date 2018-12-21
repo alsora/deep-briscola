@@ -6,18 +6,14 @@ import numpy as np
 from agents.random_agent import RandomAgent
 from agents.ai_agent import AIAgent
 
-def main(argv=None):
+
+
+def stats_gathering(agents, N):
     # Initializing the environment
     game = brisc.BriscolaGame(2,verbosity=brisc.LoggerLevels.TRAIN)
     deck = game.deck
 
-    # Initialize agents
-    agents = []
-    agents.append(RandomAgent())
-    agents.append(AIAgent())
-
     # Statistics
-    N = 10000
     winner_0 = 0
     winner_1 = 0
     point_0 = []
@@ -46,7 +42,6 @@ def main(argv=None):
     
             keep_playing = game.draw_step()
     
-    
         game_winner_id, winner_points = game.end_game()
         
         if game_winner_id:
@@ -57,9 +52,13 @@ def main(argv=None):
             point_0.append(winner_points)
             winner_0 += 1
             point_1.append(120-winner_points)
+
+    return point_0, winner_0, point_1, winner_1
+
+
+def stats_plotter(agents, point_0, winner_0, point_1, winner_1):
+    N = len(point_0)
     
-    
-    ## STATISTICS OBSERVATION
     plt.figure(figsize = (10,6))
     res = plt.hist(point_1, bins=15, edgecolor = 'black', color = 'green',
              label = 'Player 1 points')
@@ -95,7 +94,31 @@ def main(argv=None):
                 color = 'red',
                 linewidth = 3)
     plt.xlim(0,120); plt.legend(); plt.show()
+
+
+def main(argv=None):
     
+    # Random agent vs AI hard coded agent
+    RandomVsAi = []
+    RandomVsAi.append(RandomAgent())
+    RandomVsAi.append(AIAgent())
+    # Stats 
+    N = 1000
+    point_0, winner_0, point_1, winner_1 = stats_gathering(RandomVsAi, N)
+    stats_plotter(RandomVsAi, point_0, winner_0, point_1, winner_1)
+    
+
+    # Random agent vs random agent
+    RandomVsRandom = []
+    RandomVsRandom.append(RandomAgent())
+    RandomVsRandom.append(RandomAgent())
+    # Stats 
+    N = 1000
+    point_0, winner_0, point_1, winner_1 = stats_gathering(RandomVsRandom, N)
+    stats_plotter(RandomVsRandom, point_0, winner_0, point_1, winner_1)    
+
+
+
 
 if __name__ == '__main__':
     main()
