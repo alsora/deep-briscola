@@ -4,7 +4,7 @@ import numpy as np
 class HumanAgent:
 
     def __init__(self):
-        pass
+        self.name = 'HumanAgent'
 
     def observe(self, game, player, deck):
         self.hand = player.hand

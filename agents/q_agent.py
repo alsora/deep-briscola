@@ -13,6 +13,8 @@ class QAgent():
     ''' Trainable agent which uses a neural network to determine best action'''
 
     def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95, learning_rate = 1e-3):
+        self.name = 'QAgent'
+
         self.n_actions = 3
         self.n_features = 70
         self.epsilon_max = epsilon_max

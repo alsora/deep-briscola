@@ -4,7 +4,7 @@ import tensorflow as tf
 from agents.q_agent import QAgent
 from agents.random_agent import RandomAgent
 import environment as brisc
-import train
+from train import train
 
 
 space = {
@@ -37,7 +37,7 @@ def train_agent(hype_space):
     agents.append(agent)
     agents.append(RandomAgent())
 
-    best_winning_ratio = train.train(game, agents, NUM_EPOCHS, EVALUATE_EVERY, EVALUATE_FOR, MODEL_DIR)
+    best_winning_ratio = train(game, agents, NUM_EPOCHS, EVALUATE_EVERY, EVALUATE_FOR, MODEL_DIR)
 
     print ("Best winning ratio ----->", best_winning_ratio)
     min_losing_ratio = 100 - best_winning_ratio

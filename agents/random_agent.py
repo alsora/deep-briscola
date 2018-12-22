@@ -5,7 +5,7 @@ class RandomAgent:
     '''Agents selecting random available actions'''
 
     def __init__(self):
-        pass
+        self.name = 'Random Agent'
 
     def observe(self, *_):
         pass
