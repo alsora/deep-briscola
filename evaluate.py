@@ -21,8 +21,9 @@ def stats_plotter(agents, points, winners):
         plt.vlines(np.mean(points[i]),
             0,
             max(res[0])/10,
-            linewidth = 3,
-            label = 'Points mean')
+            label = 'Points mean',
+            color = 'black',
+            linewidth = 3)
         plt.vlines([np.mean(points[i]) - np.std(points[i]),
             np.mean(points[i]) + np.std(points[i])],
             ymin=0,
