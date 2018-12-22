@@ -80,9 +80,6 @@ class DRQN:
 
     def create_network(self):
 
-        print('\n\n\n\n')
-        print(f'Features : {self.n_features}')
-        print('\n\n\n\n')
         
         # input placeholders
         self.s = tf.placeholder(tf.float32, [None, self.n_features], name=f'states_id{self.num_id}')  # input State

@@ -10,7 +10,6 @@ victory_rates_hist  = []
 average_points_hist = []
 
 
-
 def play_episode(game, agents):
 
     game.reset()
@@ -91,6 +90,7 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
 
     best_winning_ratio = -1
     for epoch in range(1, num_epochs + 1):
+        print(chr(27) + '[2J')
         print ("Epoch: ", epoch, end='\r')
 
         game_winner_id, winner_points = play_episode(game, agents)
@@ -107,7 +107,7 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
             #print("DeepAgent wins ", "{:.2f}".format(victory_rates[0]), "% with average points ", "{:.2f}".format(average_points[0]))
             if victory_rates[0] > best_winning_ratio:
                 best_winning_ratio = victory_rates[0]
-                agents[0].save_model(model_dir)
+                #agents[0].save_model(model_dir)
 
     return best_winning_ratio
 
@@ -157,7 +157,7 @@ if __name__ == '__main__':
 
     # Evaluation parameters
     tf.flags.DEFINE_integer("evaluate_every", 30, "Evaluate model after this many steps (default: 1000)")
-    tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate on these many episodes for each test (default: 500)")
+    tf.flags.DEFINE_integer("num_evaluations", 100, "Evaluate on these many episodes for each test (default: 500)")
 
     FLAGS = tf.flags.FLAGS
 
