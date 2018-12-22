@@ -17,7 +17,7 @@ class BriscolaCard:
         self.number = -1    # number of the card [0, 9]
         self.strength = -1  # ordered number of the card [0, 9]
         self.points = -1    # points value of the card [0, 11]
-        
+
 
 
 class BriscolaDeck:
@@ -91,26 +91,8 @@ class BriscolaDeck:
         current_deck_size = len(self.current_deck)
         current_deck_size += 1 if self.briscola else 0
         return current_deck_size
-    
-    def card_value(self,card_br):
-        card, br = card_br
-        br_seed = br.seed
-        card_value = (card.seed == br_seed) * 10 + card.points
-        return card_value
 
-    '''
-    def get_card(self, id):
-        return self.deck[id]
-    def get_card_one_hot(self, id):
-        one_hot_vector = np.zeros(self.get_deck_size())
-        one_hot_vector[id] = 1
-        return one_hot_vector
-    def get_cards_one_hot(self, ids):
-        one_hot_vector = np.zeros(self.get_deck_size())
-        for id in ids:
-            one_hot_vector[id] = 1
-        return one_hot_vector
-    '''
+
 
 class BriscolaPlayer:
 
@@ -148,9 +130,9 @@ class BriscolaPlayer:
             del self.hand[hand_index]
             return card
         except:
-            print("PLAY CARD EXCEPTION----------_>")
+            raise ValueError("player.play_card called with invalid hand_index!")
             return None
-        
+
 
 
 class BriscolaGame:
@@ -178,6 +160,7 @@ class BriscolaGame:
 
 
     def reset(self):
+        ''' starts a new game'''
         self.deck.reset()
         self.history = []
         self.played_cards = []
@@ -194,12 +177,22 @@ class BriscolaGame:
         for _ in range(0,3):
             for i in self.players_order:
                 self.players[i].draw(self.deck)
-                
-    def reorder_hand(self):
-        for p in self.players:
-            to_sort = [(card,self.briscola) for card in p.hand]
-            to_sort.sort(key=self.deck.card_value)
-            p.hand = [card_br[0] for card_br in to_sort]
+
+
+    def reorder_hand(self, player_id):
+        ''' reorders the cards in a player hand from strongest to weakest,
+            taking briscola seed into account
+        '''
+        player = self.players[player_id]
+
+        # bubble sort algorithm using scoring() as comparator
+        for passnum in range(len(player.hand)-1,0,-1):
+            for i in range(passnum):
+                if scoring(self.briscola.seed, player.hand[i], player.hand[i+1], keep_order=False):
+                    temp = player.hand[i]
+                    player.hand[i] = player.hand[i+1]
+                    player.hand[i+1] = temp
+
 
     def get_player_actions(self, player_id):
         ''' get list of available actions for a player'''
@@ -266,7 +259,7 @@ class BriscolaGame:
     def evaluate_step(self):
         ''' look at played cards and decide which player won the hand'''
 
-        ordered_winner_id, strongest_card = self.get_strongest_card(self.briscola.seed, self.played_cards)
+        ordered_winner_id, strongest_card = get_strongest_card(self.briscola.seed, self.played_cards)
         winner_player_id = self.players_order[ordered_winner_id]
 
         points = sum([card.points for card in self.played_cards])
@@ -279,67 +272,13 @@ class BriscolaGame:
         return winner_player_id, points
 
 
-    @staticmethod
-    def get_strongest_card(briscola_seed, cards):
-        ''' Get the strongest card in the provided set'''
-        ordered_winner_id = 0
-        strongest_card = cards[0]
-
-        for ordered_id, card in enumerate(cards[1:]):
-            ordered_id += 1 # adjustment since we are starting from firsr element
-            pair_winner = BriscolaGame.scoring(briscola_seed, strongest_card, card)
-            if pair_winner is 1:
-                ordered_winner_id = ordered_id
-                strongest_card = card
-
-        return ordered_winner_id, strongest_card
-
-
-    @staticmethod
-    def get_weakest_card(briscola_seed, cards):
-        ''' Get the weakest card in the provided set'''
-        ordered_loser_id = 0
-        weakest_card = cards[0]
-
-        for ordered_id, card in enumerate(cards[1:]):
-            ordered_id += 1 # adjustment since we are starting from firsr element
-            pair_winner = BriscolaGame.scoring(briscola_seed, weakest_card, card, keep_order=False)
-            if pair_winner is 0:
-                ordered_loser_id = ordered_id
-                weakest_card = card
-
-        return ordered_loser_id, weakest_card
-
-
-    @staticmethod
-    def scoring(briscola_seed, card_0, card_1, keep_order=True):
-        ''' compare a pair of cards and decide who wins.
-            keep_order variable decides wether the first played card has a priority
-        '''
-
-        card_0_seed = card_0.seed
-        card_1_seed = card_1.seed
-
-        if briscola_seed is not card_0_seed and briscola_seed is card_1_seed:
-            winner = 1
-        elif briscola_seed is card_0_seed and briscola_seed is not card_1_seed:
-            winner = 0
-        elif card_0_seed is card_1_seed:
-            winner = 1 if card_1.strength > card_0.strength else 0
-        else:
-            # if different seeds and none of them is briscola, first wins
-            winner = 0 if keep_order or card_0.points > card_1.points else 1
-
-        return winner
-
-
     def check_end_game(self):
         ''' check if the game is ended'''
         return self.deck.end_deck
 
 
     def get_winner(self):
-
+        ''' returns the player with most_points'''
         winner_player_id = -1
         winner_points = -1
 
@@ -352,7 +291,7 @@ class BriscolaGame:
 
 
     def end_game(self):
-
+        ''' returns id of the winner of the game'''
         if not self.check_end_game():
             raise ValueError('Calling BriscolaGame.end_game when the game has not ended!')
 
@@ -371,3 +310,53 @@ class BriscolaGame:
         self.played_cards = []
         self.turn_player = winner_player_id
         self.players_order = self.get_players_order()
+
+
+
+
+def get_strongest_card(briscola_seed, cards):
+    ''' Get the strongest card in the provided set'''
+    ordered_winner_id = 0
+    strongest_card = cards[0]
+
+    for ordered_id, card in enumerate(cards[1:]):
+        ordered_id += 1 # adjustment since we are starting from firsr element
+        pair_winner = scoring(briscola_seed, strongest_card, card)
+        if pair_winner is 1:
+            ordered_winner_id = ordered_id
+            strongest_card = card
+
+    return ordered_winner_id, strongest_card
+
+
+def get_weakest_card(briscola_seed, cards):
+    ''' Get the weakest card in the provided set'''
+    ordered_loser_id = 0
+    weakest_card = cards[0]
+
+    for ordered_id, card in enumerate(cards[1:]):
+        ordered_id += 1 # adjustment since we are starting from firsr element
+        pair_winner = scoring(briscola_seed, weakest_card, card, keep_order=False)
+        if pair_winner is 0:
+            ordered_loser_id = ordered_id
+            weakest_card = card
+
+    return ordered_loser_id, weakest_card
+
+
+def scoring(briscola_seed, card_0, card_1, keep_order=True):
+    ''' compare a pair of cards and decide who wins.
+        keep_order variable decides wether the first played card has a priority
+    '''
+
+    if briscola_seed is not card_0.seed and briscola_seed is card_1.seed:
+        winner = 1
+    elif briscola_seed is card_0.seed and briscola_seed is not card_1.seed:
+        winner = 0
+    elif card_0.seed is card_1.seed:
+        winner = 1 if card_1.strength > card_0.strength else 0
+    else:
+        # if different seeds and none of them is briscola, first wins
+        winner = 0 if keep_order or card_0.points > card_1.points else 1
+
+    return winner
