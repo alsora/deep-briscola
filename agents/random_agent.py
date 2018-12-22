@@ -6,7 +6,6 @@ class RandomAgent:
 
     def __init__(self):
         self.name = 'Random Agent'
-        pass
 
     def observe(self, *_):
         pass

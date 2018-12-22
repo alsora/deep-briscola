@@ -1,58 +1,9 @@
-import os
 import tensorflow as tf
-import environment as brisc
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
-
-
-# Parameters
-# ==================================================
-
-# Model directory
-tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
-
-# Training parameters
-tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-tf.flags.DEFINE_integer("num_epochs", 500, "Number of training epochs")
-
-# Deep Agent parameters
-tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
-tf.flags.DEFINE_float("epsilon_increment", 5e-5, "How much epsilon is increased after each action taken up to epsilon_max (default: 5e-6)")
-tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremented epsilon (default: 0.85)")
-tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.85)")
-
-# Network parameters
-tf.flags.DEFINE_float("learning_rate", 1e-4, "The learning rate for the network updates (default: 1e-4)")
-
-
-# Evaluation parameters
-tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
-tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate on these many episodes for each test (default: 500)")
-
-FLAGS = tf.flags.FLAGS
-
-
-def main(argv=None):
-
-    # Initializing the environment
-    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
-
-    # Initialize agents
-    agents = []
-    agent = QAgent(
-        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
-        FLAGS.learning_rate)
-    agents.append(agent)
-    agent = RandomAgent()
-    agents.append(agent)
-
-    train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
-
-    directory = f"{FLAGS.model_dir}/{FLAGS.model_dir}_{FLAGS.num_epochs}"
-    os.makedirs(directory)
-    agents[0].save_model(directory)
+import environment as brisc
 
 
 def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
@@ -116,9 +67,7 @@ def play_episode(game, agents):
 def evaluate(game, agents, num_evaluations):
 
     total_wins = [0] * len(agents)
-    total_points = [0] * len(agents)
-    victory_rates = [0] * len(agents)
-    average_points = [0] * len(agents)
+    points_history = [ [] for i in range(len(agents))]
 
     for _ in range(num_evaluations):
 
@@ -145,18 +94,57 @@ def evaluate(game, agents, num_evaluations):
 
         game_winner_id, winner_points = game.end_game()
 
-        total_wins[game_winner_id] += 1
         for player in game.players:
-            total_points[player.id] += player.points
+            points_history[player.id].append(player.points)
+            if player.id == game_winner_id:
+                total_wins[player.id] += 1
 
-    for player in game.players:
-        victory_rates[player.id] = (total_wins[player.id]/float(num_evaluations))*100
-        average_points[player.id] = float(total_points[player.id])/float(num_evaluations)
-
-    return victory_rates, average_points
+    return total_wins, points_history
 
 
+def main(argv=None):
+
+    # Initializing the environment
+    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
+
+    # Initialize agents
+    agents = []
+    agent = QAgent(
+        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
+        FLAGS.learning_rate)
+    agents.append(agent)
+    agent = RandomAgent()
+    agents.append(agent)
+
+    train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
 
 
 if __name__ == '__main__':
+
+    # Parameters
+    # ==================================================
+
+    # Model directory
+    tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
+
+    # Training parameters
+    tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
+    tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
+
+    # Deep Agent parameters
+    tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
+    tf.flags.DEFINE_float("epsilon_increment", 5e-5, "How much epsilon is increased after each action taken up to epsilon_max (default: 5e-6)")
+    tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremented epsilon (default: 0.85)")
+    tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.85)")
+
+    # Network parameters
+    tf.flags.DEFINE_float("learning_rate", 1e-4, "The learning rate for the network updates (default: 1e-4)")
+
+
+    # Evaluation parameters
+    tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
+    tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate on these many episodes for each test (default: 500)")
+
+    FLAGS = tf.flags.FLAGS
+
     tf.app.run()

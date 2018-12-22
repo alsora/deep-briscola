@@ -13,8 +13,8 @@ class QAgent():
     ''' Trainable agent which uses a neural network to determine best action'''
 
     def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95, learning_rate = 1e-3):
-        self.name = 'Q_Agent'
-        
+        self.name = 'QAgent'
+
         self.n_actions = 3
         self.n_features = 70
         self.epsilon_max = epsilon_max
@@ -41,9 +41,6 @@ class QAgent():
             each card is array of size 14, separating one hot encoded number and seed i.e. [number_one_hot, seed_one_hot]
             if there are no cards at a particular location, the array is all zeros.
         '''
-            
-        # Reordering the player hand in descending order (low -> high)
-        game.reorder_hand()
 
         state=np.zeros(self.n_features)
         # add hand to state
