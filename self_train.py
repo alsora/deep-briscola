@@ -1,13 +1,16 @@
 import tensorflow as tf
+import environment as brisc
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import os
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
-import environment as brisc
 
 
-victory_rates_hist  = []
-average_points_hist = []
+
 
 
 def play_episode(game, agents):
@@ -86,7 +89,7 @@ def evaluate(game, agents, num_evaluations):
 
 
 
-def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
+def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
 
     best_winning_ratio = -1
     for epoch in range(1, num_epochs + 1):
@@ -102,6 +105,24 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
             victory_rates_hist.append(victory_rates)
             average_points_hist.append(average_points)
 
+            # EVALUATION VISUALISATION
+            if not os.path.isdir(evaluation_dir):
+                os.mkdir(evaluation_dir)
+
+            df  = np.array(average_points_hist)
+            evaluation_num = len(df[:,0,0])
+            eval_df = np.array(average_points_hist)[evaluation_num-1,:,:]
+
+            eval_df = pd.DataFrame(eval_df.T, columns = ["Agent 0","Agent 1"])
+            eval_df.plot()
+            plt.title(f"Evaluation number {evaluation_num} at epoch {evaluation_num*FLAGS.evaluate_every}")
+            plt.ylim(0,120)
+            plt.xlabel("Evaluation step")
+            plt.ylabel("Points")
+            plt.savefig(f"{evaluation_dir}/fig_{epoch}")
+            plt.close()
+
+
             for agent in agents:
                 agent.restore_epsilon()
             #print("DeepAgent wins ", "{:.2f}".format(victory_rates[0]), "% with average points ", "{:.2f}".format(average_points[0]))
@@ -115,6 +136,12 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
 
 
 def main(argv=None):
+
+    global victory_rates_hist
+    victory_rates_hist  = []
+
+    global average_points_hist
+    average_points_hist = []
 
     # Initializing the environment
     game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
@@ -133,13 +160,36 @@ def main(argv=None):
     train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
 
 
+
+
+
+
+#
+#
+#df  = np.array(average_points_hist)
+#evaluation_num = len(df[:,0,0])
+#eval_df = np.array(average_points_hist)[evaluation_num-1,:,:]
+#
+#eval_df = pd.DataFrame(eval_df.T, columns = ["Agent 0","Agent 1"])
+#eval_df.plot()
+#plt.title(f"Evaluation number :{evaluation_num} at epoch :{evaluation_num*FLAGS.evaluate_every}")
+#plt.ylim(0,120)
+#plt.xlabel("Evaluation step")
+#plt.ylabel("Points");
+
+
+
+
+
+
 if __name__ == '__main__':
 
     # Parameters
     # ==================================================
 
-    # Model directory
+    # Directories
     tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
+    tf.flags.DEFINE_string("evaluation_dir", "evaluation_dir", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
 
     # Training parameters
     tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
