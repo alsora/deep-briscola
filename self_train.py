@@ -112,15 +112,27 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
             df  = np.array(average_points_hist)
             evaluation_num = len(df[:,0,0])
             eval_df = np.array(average_points_hist)[evaluation_num-1,:,:]
-
             eval_df = pd.DataFrame(eval_df.T, columns = ["Agent 0","Agent 1"])
+
             eval_df.plot()
-            plt.title(f"Evaluation number {evaluation_num} at epoch {evaluation_num*FLAGS.evaluate_every}")
+            plt.hlines([np.mean(eval_df.values),
+                        np.mean(eval_df.values)+np.std(eval_df.values),
+                        np.mean(eval_df.values)-np.std(eval_df.values)],
+                       0, len(df[0,0,:]), color = ['green','red','red'],
+                       label = 'mean+-std')
+            plt.title(f"""Eval:{evaluation_num}_
+                      epoch:{evaluation_num*FLAGS.evaluate_every}_
+                      pctWinBest:{max(victory_rates_hist[-1])}_
+                      std:{np.std(eval_df.values).round(2)}""".replace('\n','').replace(' ',''))
             plt.ylim(0,120)
             plt.xlabel("Evaluation step")
             plt.ylabel("Points")
+            plt.legend()
             plt.savefig(f"{evaluation_dir}/fig_{epoch}")
             plt.close()
+
+            # Storing std
+            std_hist.append(np.std(eval_df.values).round(2))
 
 
             for agent in agents:
@@ -142,7 +154,14 @@ def main(argv=None):
 
     global average_points_hist
     average_points_hist = []
+<<<<<<< 1d1db784aadfe0c14cde31a38ce7f3e774e8a271
 
+=======
+
+    global std_hist
+    std_hist = []
+
+>>>>>>> Graphs for evaluation of performance during time
     # Initializing the environment
     game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
 
@@ -157,25 +176,33 @@ def main(argv=None):
         FLAGS.learning_rate)
     agents.append(agent)
 
-    train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
+    train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every,
+          FLAGS.num_evaluations, FLAGS.model_dir, FLAGS.evaluation_dir)
 
 
+    df = np.vstack([np.array(victory_rates_hist).T,np.array(std_hist)]).T
+
+    vict_rate = pd.DataFrame(df, columns = ["Agent 0 win_rate","Agent 1 win_rate", "Std"])
 
 
+    vict_rate['Agent 0 win_rate'].plot(secondary_y=False,
+                                       color = 'lightgreen',
+                                       label='Agent 0 (left)')
+    vict_rate['Agent 1 win_rate'].plot(secondary_y=False,
+                                       color = 'lightblue',
+                                       label='Agent 1 (left)')
+    plt.hlines([np.mean(vict_rate.values[:,0]),
+                np.mean(vict_rate.values[:,1])],
+               0, len(vict_rate)-1, color = ['green','blue'],
+               label = 'means')
+    plt.ylabel('WinRate')
+    plt.legend()
 
+    vict_rate.Std.plot(secondary_y=True, label="Std (right)", color = 'red', alpha = 0.8)
+    plt.ylabel('StandardDeviation', rotation=270, labelpad=15)
+    plt.legend()
+    plt.savefig(f"{FLAGS.evaluation_dir}/last")
 
-#
-#
-#df  = np.array(average_points_hist)
-#evaluation_num = len(df[:,0,0])
-#eval_df = np.array(average_points_hist)[evaluation_num-1,:,:]
-#
-#eval_df = pd.DataFrame(eval_df.T, columns = ["Agent 0","Agent 1"])
-#eval_df.plot()
-#plt.title(f"Evaluation number :{evaluation_num} at epoch :{evaluation_num*FLAGS.evaluate_every}")
-#plt.ylim(0,120)
-#plt.xlabel("Evaluation step")
-#plt.ylabel("Points");
 
 
 
@@ -189,11 +216,11 @@ if __name__ == '__main__':
 
     # Directories
     tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
-    tf.flags.DEFINE_string("evaluation_dir", "evaluation_dir", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
+    tf.flags.DEFINE_string("evaluation_dir", "evaluation_dir2", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
 
     # Training parameters
     tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 121, "Number of training epochs")
+    tf.flags.DEFINE_integer("num_epochs", 500, "Number of training epochs")
 
     # Deep Agent parameters
     tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
