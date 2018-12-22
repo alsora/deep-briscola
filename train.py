@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
     # Training parameters
     tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
+    tf.flags.DEFINE_integer("num_epochs", 32, "Number of training epochs")
 
     # Deep Agent parameters
     tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
