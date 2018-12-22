@@ -154,14 +154,10 @@ def main(argv=None):
 
     global average_points_hist
     average_points_hist = []
-<<<<<<< 1d1db784aadfe0c14cde31a38ce7f3e774e8a271
-
-=======
 
     global std_hist
     std_hist = []
 
->>>>>>> Graphs for evaluation of performance during time
     # Initializing the environment
     game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
 
@@ -180,10 +176,9 @@ def main(argv=None):
           FLAGS.num_evaluations, FLAGS.model_dir, FLAGS.evaluation_dir)
 
 
+    # SUMMARY GRAPH
     df = np.vstack([np.array(victory_rates_hist).T,np.array(std_hist)]).T
-
     vict_rate = pd.DataFrame(df, columns = ["Agent 0 win_rate","Agent 1 win_rate", "Std"])
-
 
     vict_rate['Agent 0 win_rate'].plot(secondary_y=False,
                                        color = 'lightgreen',
@@ -198,7 +193,8 @@ def main(argv=None):
     plt.ylabel('WinRate')
     plt.legend()
 
-    vict_rate.Std.plot(secondary_y=True, label="Std (right)", color = 'red', alpha = 0.8)
+    vict_rate.Std.plot(secondary_y=True, label="Std (right)", color = 'red',
+                       alpha = 0.8, linestyle='-.')
     plt.ylabel('StandardDeviation', rotation=270, labelpad=15)
     plt.legend()
     plt.savefig(f"{FLAGS.evaluation_dir}/last")
