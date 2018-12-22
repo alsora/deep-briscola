@@ -6,26 +6,9 @@ from agents.ai_agent import AIAgent
 import environment as brisc
 
 
-def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
+victory_rates_hist  = []
+average_points_hist = []
 
-    best_winning_ratio = -1
-    for epoch in range(1, num_epochs + 1):
-        print ("Epoch: ", epoch, end='\r')
-
-        game_winner_id, winner_points = play_episode(game, agents)
-
-        if epoch % evaluate_every == 0:
-            for agent in agents:
-                agent.make_greedy()
-            victory_rates, average_points = evaluate(game, agents, num_evaluations)
-            for agent in agents:
-                agent.restore_epsilon()
-            print("DeepAgent wins ", "{:.2f}".format(victory_rates[0]), "% with average points ", "{:.2f}".format(average_points[0]))
-            if victory_rates[0] > best_winning_ratio:
-                best_winning_ratio = victory_rates[0]
-                agents[0].save_model(model_dir)
-
-    return best_winning_ratio
 
 
 def play_episode(game, agents):
@@ -62,6 +45,7 @@ def play_episode(game, agents):
         keep_playing = game.draw_step()
 
     return game.end_game()
+
 
 
 def evaluate(game, agents, num_evaluations):
@@ -102,6 +86,34 @@ def evaluate(game, agents, num_evaluations):
     return total_wins, points_history
 
 
+
+def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
+
+    best_winning_ratio = -1
+    for epoch in range(1, num_epochs + 1):
+        print ("Epoch: ", epoch, end='\r')
+
+        game_winner_id, winner_points = play_episode(game, agents)
+
+        if epoch % evaluate_every == 0:
+            for agent in agents:
+                agent.make_greedy()
+            victory_rates, average_points = evaluate(game, agents, num_evaluations)
+            victory_rates_hist.append(victory_rates)
+            average_points_hist.append(average_points)
+            
+            for agent in agents:
+                agent.restore_epsilon()
+            #print("DeepAgent wins ", "{:.2f}".format(victory_rates[0]), "% with average points ", "{:.2f}".format(average_points[0]))
+            if victory_rates[0] > best_winning_ratio:
+                best_winning_ratio = victory_rates[0]
+                agents[0].save_model(model_dir)
+
+    return best_winning_ratio
+
+
+
+
 def main(argv=None):
 
     # Initializing the environment
@@ -109,11 +121,13 @@ def main(argv=None):
 
     # Initialize agents
     agents = []
-    agent = QAgent( 10,  # num_id
+    agent = QAgent( 1,
         FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
         FLAGS.learning_rate)
     agents.append(agent)
-    agent = RandomAgent()
+    agent = QAgent( 2,
+        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
+        FLAGS.learning_rate)
     agents.append(agent)
 
     train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
@@ -129,7 +143,7 @@ if __name__ == '__main__':
 
     # Training parameters
     tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 32, "Number of training epochs")
+    tf.flags.DEFINE_integer("num_epochs", 121, "Number of training epochs")
 
     # Deep Agent parameters
     tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
@@ -142,9 +156,73 @@ if __name__ == '__main__':
 
 
     # Evaluation parameters
-    tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
+    tf.flags.DEFINE_integer("evaluate_every", 30, "Evaluate model after this many steps (default: 1000)")
     tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate on these many episodes for each test (default: 500)")
 
     FLAGS = tf.flags.FLAGS
 
     tf.app.run()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
