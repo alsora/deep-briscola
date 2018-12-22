@@ -96,7 +96,7 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
         print(chr(27) + '[2J')
         print ("Epoch: ", epoch, end='\r')
 
-        game_winner_id, winner_points = play_episode(game, agents)
+        game_winner_id, winn500er_points = play_episode(game, agents)
 
         if epoch % evaluate_every == 0:
             for agent in agents:
@@ -212,11 +212,11 @@ if __name__ == '__main__':
 
     # Directories
     tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
-    tf.flags.DEFINE_string("evaluation_dir", "evaluation_dir2", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
+    tf.flags.DEFINE_string("evaluation_dir", "evaluation_dir3", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
 
     # Training parameters
     tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 500, "Number of training epochs")
+    tf.flags.DEFINE_integer("num_epochs", 1000, "Number of training epochs")
 
     # Deep Agent parameters
     tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
