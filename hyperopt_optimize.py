@@ -37,11 +37,11 @@ def train_agent(hype_space):
     agents.append(agent)
     agents.append(RandomAgent())
 
-    best_winning_ratio = train(game, agents, NUM_EPOCHS, EVALUATE_EVERY, EVALUATE_FOR, MODEL_DIR)
+    best_total_wins = train(game, agents, NUM_EPOCHS, EVALUATE_EVERY, EVALUATE_FOR, MODEL_DIR)
 
-    print ("Best winning ratio ----->", best_winning_ratio)
-    min_losing_ratio = 100 - best_winning_ratio
-    return min_losing_ratio
+    print ("Best total wins ----->", best_total_wins)
+    best_total_loses = EVALUATE_FOR - best_total_loses
+    return best_total_loses
 
 
 

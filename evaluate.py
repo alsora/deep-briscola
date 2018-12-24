@@ -9,15 +9,15 @@ from agents.ai_agent import AIAgent
 from agents.q_agent import QAgent
 
 
-def stats_plotter(agents, points, winners):
-    N = len(points[0])
+def stats_plotter(agents, points, total_wins):
+    num_evaluations = len(points[0])
     colors = ['green', 'lightblue']
 
     for i in range(len(agents)):
         plt.figure(figsize = (10,6))
         res = plt.hist(points[i], bins=15, edgecolor = 'black', color = colors[i],
             label = agents[i].name + " " + str(i) + " points")
-        plt.title(agents[i].name + " " + str(i) + " won {:.2f}".format( winners[i]/N*100) + "%")
+        plt.title(agents[i].name + " " + str(i) + " won {:.2%}".format(total_wins[i]/num_evaluations))
         plt.vlines(np.mean(points[i]),
             0,
             max(res[0])/10,
@@ -54,14 +54,14 @@ def main(argv=None):
     # test first agent against RandomAgent
     agents.append(RandomAgent())
 
-    winners, points = evaluate(game, agents, FLAGS.num_evaluations)
-    stats_plotter(agents, points, winners)
+    total_wins, points_history = evaluate(game, agents, FLAGS.num_evaluations)
+    stats_plotter(agents, points_history, total_wins)
 
     # test first agent against AIAgent
     agents[1] = AIAgent()
 
-    winners, points = evaluate(game, agents, FLAGS.num_evaluations)
-    stats_plotter(agents, points, winners)
+    total_wins, points_history = evaluate(game, agents, FLAGS.num_evaluations)
+    stats_plotter(agents, points_history, total_wins)
 
 
 

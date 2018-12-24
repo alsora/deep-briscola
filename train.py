@@ -1,4 +1,5 @@
 import tensorflow as tf
+from statistics import mean
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
@@ -8,7 +9,7 @@ import environment as brisc
 
 def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
 
-    best_winning_ratio = -1
+    best_total_wins = -1
     for epoch in range(1, num_epochs + 1):
         print ("Epoch: ", epoch, end='\r')
 
@@ -17,15 +18,14 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
         if epoch % evaluate_every == 0:
             for agent in agents:
                 agent.make_greedy()
-            victory_rates, average_points = evaluate(game, agents, num_evaluations)
+            total_wins, points_history = evaluate(game, agents, num_evaluations)
             for agent in agents:
                 agent.restore_epsilon()
-            print("DeepAgent wins ", "{:.2f}".format(victory_rates[0]), "% with average points ", "{:.2f}".format(average_points[0]))
-            if victory_rates[0] > best_winning_ratio:
-                best_winning_ratio = victory_rates[0]
+            if total_wins[0] > best_total_wins:
+                best_total_wins = total_wins[0]
                 agents[0].save_model(model_dir)
 
-    return best_winning_ratio
+    return best_total_wins
 
 
 def play_episode(game, agents):
@@ -98,6 +98,10 @@ def evaluate(game, agents, num_evaluations):
             points_history[player.id].append(player.points)
             if player.id == game_winner_id:
                 total_wins[player.id] += 1
+
+    print(total_wins)
+    for i in range(len(agents)):
+        print(agents[i].name + " " + str(i) + " won {:.2%}".format(total_wins[i]/num_evaluations), " with average points {:.2f}".format(mean(points_history[i])))
 
     return total_wins, points_history
 
