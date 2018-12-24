@@ -31,7 +31,7 @@ class AIAgent:
             points = []
             for action_index, card in enumerate(self.hand):
                 for played_card in self.played_cards:
-                    winner = brisc.BriscolaGame.scoring(self.briscola_seed, played_card, card)
+                    winner = brisc.scoring(self.briscola_seed, played_card, card)
                     if winner:
                         win_actions.append(action_index)
                         points.append(card.points)
@@ -85,12 +85,12 @@ class AIAgent:
                 else:
                     # I have more than one briscola for winning the hand, play the weakest
                     win_cards = [self.hand[i] for i in win_actions]
-                    weakest_win_index, weakest_win_card = brisc.BriscolaGame.get_weakest_card(self.briscola_seed, win_cards)
+                    weakest_win_index, weakest_win_card = brisc.get_weakest_card(self.briscola_seed, win_cards)
                     return win_actions[weakest_win_index]
 
         # if I am here I can't win the hand or there are no points on table (there may be no card at all)
         # find weakest card (it may be a carico if other cards in hand are briscola)
-        weakest_index, weakest_card = brisc.BriscolaGame.get_weakest_card(self.briscola_seed, self.hand)
+        weakest_index, weakest_card = brisc.get_weakest_card(self.briscola_seed, self.hand)
         if weakest_card.points > 4:
             # I would rather throw a small briscola than a carico
             low_points_sorted_cards = sorted(self.hand, key=lambda card: card.strength)
