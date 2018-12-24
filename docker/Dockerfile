@@ -14,6 +14,9 @@ ENV NVIDIA_VISIBLE_DEVICES \
 ENV NVIDIA_DRIVER_CAPABILITIES \
     ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
+RUN apt-get update && apt-get install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa -y
+
 # general utilities
 RUN apt-get update && apt-get install -y \
     wget \
@@ -23,48 +26,38 @@ RUN apt-get update && apt-get install -y \
     nano \
     python-dev \
     python3-pip \
-    ipython
+    ipython \
+    python3.6
 
-# pip
-RUN pip3 install --upgrade pip
+# pip upgrade
+RUN python3.6 -m pip install --upgrade pip
 
-RUN apt-get update && apt-get install -y \
-  build-essential \
-  cmake \
-  git
 
 #### TENSORFLOW SETUP
 
+
 # install tensorflow
-RUN pip install tensorflow
+RUN python3.6 -m pip install tensorflow
 
-# general python visualization packages
+
+#### ADDITIONAL PYTHON PACKAGES
+
+
+RUN python3.6 -m pip install \
+    hyperopt \
+    matplotlib \
+    pandas
+
 RUN apt-get install -y \
-  python3-tk \
-  libgtk2.0-dev
-RUN pip install matplotlib opencv-python
+    python3.6-tk \
+    libgtk2.0-dev
 
-RUN apt-get install -y \
-  protobuf-compiler \
-  python-pil \
-  python-lxml \
-  python-tk \
-  unzip
-RUN pip install \
-  Cython \
-  contextlib2 \
-  jupyter \
-  matplotlib \
-  opencv-python
-
-RUN pip install PyOpenGL PyOpenGL-accelerate
-RUN apt-get install -y python3-pil python3-pil.imagetk
-RUN pip install hyperopt
 
 #### SET ENVIRONMENT
 
+
 RUN echo ' \n\
-alias python="python3"' >> $HOME/.bashrc
+alias python="python3.6"' >> $HOME/.bashrc
 
 
 
