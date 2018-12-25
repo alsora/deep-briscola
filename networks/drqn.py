@@ -79,86 +79,87 @@ class DRQN:
 
     def create_network(self):
 
-        tf.reset_default_graph()
-        
-        # input placeholders
-        self.s = tf.placeholder(tf.float32, [None, self.n_features], name='states')  # input State
-        self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
-        self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
-        self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
-        self.events_length = tf.placeholder(dtype=tf.int32)
-        w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
+        self.graph = tf.Graph()
+        with self.graph.as_default():
+            # input placeholders
+            self.s = tf.placeholder(tf.float32, [None, self.n_features], name='states')  # input State
+            self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
+            self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
+            self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
+            self.events_length = tf.placeholder(dtype=tf.int32)
+            w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
-        # evaluation network
-        with tf.variable_scope('eval_net'):
+            # evaluation network
+            with tf.variable_scope('eval_net'):
 
-            e1 = tf.layers.dense(self.s, 128, tf.nn.relu, kernel_initializer=w_initializer,
-                        bias_initializer=b_initializer, name= 'e1')
-
-
-            rnn_s = tf.reshape(tf.contrib.slim.flatten(e1),[-1,self.events_length, 128])
-            rnn_multi_cells_e = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
-
-            rnn_output_e, _ = tf.nn.dynamic_rnn(
-                rnn_multi_cells_e, rnn_s, dtype=tf.float32)
-            rnn_output_e = tf.reshape(rnn_output_e,shape=[-1, self.lstm_layers[-1]])
+                e1 = tf.layers.dense(self.s, 128, tf.nn.relu, kernel_initializer=w_initializer,
+                            bias_initializer=b_initializer, name= 'e1')
 
 
-            e2 = tf.layers.dense(rnn_output_e, 32, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e2')
+                rnn_s = tf.reshape(tf.contrib.slim.flatten(e1),[-1,self.events_length, 128])
+                rnn_multi_cells_e = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
 
-            self.q = tf.layers.dense(e2, self.n_actions, kernel_initializer=w_initializer,
-                                            bias_initializer=b_initializer, name='q')
-
-
-        # target network
-        with tf.variable_scope('target_net'):
-
-            t1 = tf.layers.dense(self.s_, 128, tf.nn.relu, kernel_initializer=w_initializer,
-                        bias_initializer=b_initializer, name='t1')
-
-            rnn_s_ = tf.reshape(tf.contrib.slim.flatten(t1),[-1,self.events_length, 128])
-            multi_cells_t = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
-
-            rnn_output_t, _ = tf.nn.dynamic_rnn(
-                multi_cells_t, rnn_s_, dtype=tf.float32)
-            rnn_output_t = tf.reshape(rnn_output_t,shape=[-1, self.lstm_layers[-1]])
+                rnn_output_e, _ = tf.nn.dynamic_rnn(
+                    rnn_multi_cells_e, rnn_s, dtype=tf.float32)
+                rnn_output_e = tf.reshape(rnn_output_e,shape=[-1, self.lstm_layers[-1]])
 
 
+                e2 = tf.layers.dense(rnn_output_e, 32, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='e2')
 
-            t2 = tf.layers.dense(rnn_output_t, 32, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t2')
-
-            self.q_next = tf.layers.dense(t2, self.n_actions, kernel_initializer=w_initializer,
-                                            bias_initializer=b_initializer, name='q_next')
-
-        with tf.variable_scope('predictions'):
-            # predicted actions according to evaluation network
-            self.argmax_action = tf.argmax(self.q, 1, output_type=tf.int32, name='argmax')
-        with tf.variable_scope('q_target'):
-            # discounted reward on the target network
-            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
-            # stop gradient to avoid updating target network
-            self.q_target = tf.stop_gradient(q_target)
-        with tf.variable_scope('q_wrt_a'):
-            # q value of chosen action
-            a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
-            self.q_wrt_a = tf.gather_nd(params=self.q, indices=a_indices)
-        with tf.variable_scope('loss'):
-            # loss computed as difference between predicted q[a] and (current_reward + discount * q_target[best_future_action])
-            self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_wrt_a, name='td_error'))
-        with tf.variable_scope('train'):
-            opt = tf.train.AdamOptimizer(self.learning_rate)
-            grads_and_vars = opt.compute_gradients(self.loss)
-            self._train_op = opt.apply_gradients(grads_and_vars, name='optimizer')
-
-        t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
-        e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
+                self.q = tf.layers.dense(e2, self.n_actions, kernel_initializer=w_initializer,
+                                                bias_initializer=b_initializer, name='q')
 
 
-        with tf.variable_scope('hard_replacement'):
-            # operator for assiging evaluation network weights to the target network
-            self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
+            # target network
+            with tf.variable_scope('target_net'):
+
+                t1 = tf.layers.dense(self.s_, 128, tf.nn.relu, kernel_initializer=w_initializer,
+                            bias_initializer=b_initializer, name='t1')
+
+                rnn_s_ = tf.reshape(tf.contrib.slim.flatten(t1),[-1,self.events_length, 128])
+                multi_cells_t = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
+
+                rnn_output_t, _ = tf.nn.dynamic_rnn(
+                    multi_cells_t, rnn_s_, dtype=tf.float32)
+                rnn_output_t = tf.reshape(rnn_output_t,shape=[-1, self.lstm_layers[-1]])
+
+
+
+                t2 = tf.layers.dense(rnn_output_t, 32, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='t2')
+
+                self.q_next = tf.layers.dense(t2, self.n_actions, kernel_initializer=w_initializer,
+                                                bias_initializer=b_initializer, name='q_next')
+
+            with tf.variable_scope('predictions'):
+                # predicted actions according to evaluation network
+                self.argmax_action = tf.argmax(self.q, 1, output_type=tf.int32, name='argmax')
+            with tf.variable_scope('q_target'):
+                # discounted reward on the target network
+                q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
+                # stop gradient to avoid updating target network
+                self.q_target = tf.stop_gradient(q_target)
+            with tf.variable_scope('q_wrt_a'):
+                # q value of chosen action
+                a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
+                self.q_wrt_a = tf.gather_nd(params=self.q, indices=a_indices)
+            with tf.variable_scope('loss'):
+                # loss computed as difference between predicted q[a] and (current_reward + discount * q_target[best_future_action])
+                self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_wrt_a, name='td_error'))
+            with tf.variable_scope('train'):
+                opt = tf.train.AdamOptimizer(self.learning_rate)
+                grads_and_vars = opt.compute_gradients(self.loss)
+                self._train_op = opt.apply_gradients(grads_and_vars, name='optimizer')
+
+            t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
+            e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
+
+
+            with tf.variable_scope('hard_replacement'):
+                # operator for assiging evaluation network weights to the target network
+                self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
+
 
     def get_q_table(self, state):
             ''' Compute q table for current state'''
@@ -179,8 +180,7 @@ class DRQN:
         self.last_episode.append(state_vector)
 
         # HACK for check end episode
-        cards_in_hand = np.sum(state[0:42])
-        if cards_in_hand == 0:
+        if len(self.last_episode) == 20:
             self.replay_memory.push(self.last_episode)
             self.last_episode = []
 
@@ -212,16 +212,17 @@ class DRQN:
 
     def initialize_session(self):
         '''Defines self.sess and initialize the variables'''
-        #self.logger.info("Initializing tf session")
         session_conf = tf.ConfigProto(
             allow_soft_placement = True,
             log_device_placement = False)
-        self.session = tf.Session(config = session_conf)
-        self.session.run(tf.global_variables_initializer())
-        try:
-            self.saver = tf.train.Saver(tf.global_variables(), max_to_keep = 5)
-        except:
-            pass
+
+        self.session = tf.Session(config = session_conf, graph=self.graph)
+
+        with self.graph.as_default():
+            self.init = tf.global_variables_initializer()
+            self.saver = tf.train.Saver()
+
+        self.session.run(self.init)
 
 
     def save_model(self, output_dir):
@@ -229,20 +230,14 @@ class DRQN:
         if not output_dir:
             raise ValueError('You have to specify a valid output directory for DeepAgent.save_model')
 
-        if os.path.exists(output_dir):
-            # if provided output_dir already exists, remove it
-            shutil.rmtree(output_dir)
+        if not os.path.exists(output_dir):
+            # if provided output_dir does not already exists, create it
+            os.mkdir(output_dir)
 
-        builder = tf.saved_model.builder.SavedModelBuilder(output_dir)
-        builder.add_meta_graph_and_variables(
-            self.session,
-            [tf.saved_model.tag_constants.SERVING],
-            clear_devices=True)
-        # create a new directory output_dir and store the saved model in it
-        builder.save()
+        self.saver.save(self.session, "./" + output_dir + '/')
 
 
     def load_model(self, saved_model_dir):
         '''Initialize a new tensorflow session loading network and weights from a saved model'''
-        tf.saved_model.loader.load(self.session, [tf.saved_model.tag_constants.SERVING], saved_model_dir)
+        self.saver.restore(self.session, "./" + saved_model_dir + '/')
 
