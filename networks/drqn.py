@@ -234,10 +234,10 @@ class DRQN:
             # if provided output_dir does not already exists, create it
             os.mkdir(output_dir)
 
-        self.saver.save(self.session, "./" + output_dir)
+        self.saver.save(self.session, "./" + output_dir + '/')
 
 
     def load_model(self, saved_model_dir):
         '''Initialize a new tensorflow session loading network and weights from a saved model'''
-        self.saver.restore(self.session, "./" + saved_model_dir)
+        self.saver.restore(self.session, "./" + saved_model_dir + '/')
 
