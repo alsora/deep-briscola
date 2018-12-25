@@ -12,9 +12,8 @@ from networks.drqn import DRQN
 class QAgent():
     ''' Trainable agent which uses a neural network to determine best action'''
 
-    def __init__(self, num_id = 1, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95, learning_rate = 1e-3):
+    def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95, learning_rate = 1e-3):
         self.name = 'QAgent'
-        self.num_id = num_id
 
         self.n_actions = 3
         self.n_features = 70
@@ -30,7 +29,7 @@ class QAgent():
         self.reward = None
 
         # create q learning algorithm
-        self.q_learning = DRQN(self.n_actions, self.n_features, num_id, learning_rate, discount)
+        self.q_learning = DRQN(self.n_actions, self.n_features, learning_rate, discount)
 
 
         self.count_wrong_moves = 0

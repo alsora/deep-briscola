@@ -38,7 +38,7 @@ def main(argv=None):
 
     # Initialize agents
     agents = []
-    agent = QAgent( 10,  # num_id
+    agent = QAgent(
         FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
         FLAGS.learning_rate)
     agents.append(agent)

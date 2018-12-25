@@ -48,7 +48,7 @@ class ReplayMemory:
 
 class DRQN:
 
-    def __init__(self, n_actions, n_features, num_id, learning_rate = 1e-3, discount = 0.85):
+    def __init__(self, n_actions, n_features, learning_rate = 1e-3, discount = 0.85):
 
         # network parameters
         self.n_features = n_features
@@ -73,7 +73,6 @@ class DRQN:
         self.replay_memory = ReplayMemory(capacity, n_features)
 
         # create network
-        self.num_id = num_id
         self.create_network()
         self.initialize_session()
 
