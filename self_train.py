@@ -4,15 +4,11 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import shutil
 import copy
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
-
-
-
 
 
 def play_episode(game, agents):
