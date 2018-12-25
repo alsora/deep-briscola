@@ -4,6 +4,8 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import shutil
+import copy
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
@@ -41,7 +43,9 @@ def play_episode(game, agents):
             agent.observe(game, player, game.deck)
 
             reward = rewards[i]
-            agent.update(reward)
+            # We want to update only the real agent, not its past copies
+            if agent.name != 'copy':   
+                agent.update(reward)
 
         # update the environment
         keep_playing = game.draw_step()
@@ -89,12 +93,28 @@ def evaluate(game, agents, num_evaluations):
 
 
 
-def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
+def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
 
+    # Initializing the list of agents with the agent and a copy of him
+    if not os.path.isdir('cur_model_copy'):
+        os.makedirs('cur_model_copy')
+    agent.save_model('cur_model_copy')
+    first_old = QAgent()
+    first_old.load_model('cur_model_copy')
+    old_agents = [agent, first_old]
+    
+    
+    
     best_winning_ratio = -1
     for epoch in range(1, num_epochs + 1):
         print(chr(27) + '[2J')
-        print ("Epoch: ", epoch, end='\r')
+        
+        # picking an agent from the past self
+        old_num = np.random.randint(1,len(old_agents))
+        agents= [agent, old_agents[len(old_agents)-old_num]] 
+        
+        print (f"Epoch: {epoch} Agent {old_num} old", end='\r')
+                
 
         game_winner_id, winn500er_points = play_episode(game, agents)
 
@@ -141,6 +161,13 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
             if victory_rates[0] > best_winning_ratio:
                 best_winning_ratio = victory_rates[0]
                 #agents[0].save_model(model_dir)
+                
+            # After the evaluation we add the agent to the old agents
+            agent.save_model('cur_model_copy')
+            new_old_agent = QAgent()
+            new_old_agent.load_model('cur_model_copy')
+            old_agents.append(new_old_agent)
+            
 
     return best_winning_ratio
 
@@ -161,18 +188,12 @@ def main(argv=None):
     # Initializing the environment
     game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
 
-    # Initialize agents
-    agents = []
-    agent = QAgent( 1,
+    # Initialize agent
+    agent = QAgent(
         FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
         FLAGS.learning_rate)
-    agents.append(agent)
-    agent = QAgent( 2,
-        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
-        FLAGS.learning_rate)
-    agents.append(agent)
-
-    train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, 
+    
+    self_train(game, agent, FLAGS.num_epochs, FLAGS.evaluate_every, 
           FLAGS.num_evaluations, FLAGS.model_dir, FLAGS.evaluation_dir)
 
 
@@ -216,7 +237,7 @@ if __name__ == '__main__':
 
     # Training parameters
     tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 1000, "Number of training epochs")
+    tf.flags.DEFINE_integer("num_epochs", 61, "Number of training epochs")
 
     # Deep Agent parameters
     tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
@@ -235,14 +256,6 @@ if __name__ == '__main__':
     FLAGS = tf.flags.FLAGS
 
     tf.app.run()
-
-
-
-
-
-
-
-
 
 
 
