@@ -7,6 +7,7 @@ import itertools, time, random, os, shutil
 
 from networks.dqn import DQN
 from networks.drqn import DRQN
+from networks.a2c import A2C
 
 
 class QAgent():
@@ -29,7 +30,7 @@ class QAgent():
         self.reward = None
 
         # create q learning algorithm
-        self.q_learning = DRQN(self.n_actions, self.n_features, learning_rate, discount)
+        self.q_learning = A2C(self.n_actions, self.n_features, learning_rate, discount)
 
 
         self.count_wrong_moves = 0
@@ -76,45 +77,33 @@ class QAgent():
         if self.state is None:
             raise ValueError("DeepAgent.select_action called before observing the state")
 
-        if np.random.uniform() > self.epsilon:
-            # select action randomly with probability (1 - epsilon)
-            action = np.random.choice(available_actions)
-        else:
-            q = self.q_learning.get_q_table(self.state)
-            # sort actions from highest to lowest predicted q value
-            sorted_actions = (-q).argsort()
+        policy, value = self.q_learning.get_q_table(self.state)
 
-            for predicted_action in sorted_actions:
-                if predicted_action in available_actions:
-                    action = predicted_action
-                    break
+        noise = np.random.uniform(size=np.shape(policy))
+        policy_with_noise = policy - np.log(-np.log(noise))
 
-            #if action != argmax[0]:
-                #self.wrong_move = True
-                #self.count_wrong_moves += 1
+        # sort actions from highest to lowest predicted q value
+        sorted_actions = (-policy_with_noise).argsort()
+        for predicted_action in sorted_actions:
+            if predicted_action in available_actions:
+                action = predicted_action
+                break
 
-        # store the chosen action
+        # store the chosen action and value table
         self.action = action
+        self.value = value
         return action
 
 
     def update(self, reward):
         ''' After receiving a reward the agent has all collected [s, a, r, s_]'''
 
-        '''
-        if self.wrong_move:
-            # reduce the reward if the agent's last move has been a not allowed move
-            self.reward = -10
-            self.wrong_move = False
-        else:
-            self.reward = reward
-        '''
         # update last reward
         self.reward = reward
         # update epsilon grediness
         self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
 
-        self.q_learning.learn(self.last_state, self.action, self.reward, self.state)
+        self.q_learning.learn(self.last_state, self.action, self.reward, self.value)
 
 
     def save_model(self, output_dir):
