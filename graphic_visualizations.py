@@ -2,12 +2,38 @@ import numpy as __np
 import pandas as __pd
 import matplotlib.pyplot as __plt
 
+def stats_plotter(agents, points, winners, evaluation_dir,name,epoch):
+    N = len(points[0])
+    colors = ['green', 'lightblue']
 
+    for i in range(len(agents)):
+        __plt.figure(figsize = (10,6))
+        res = __plt.hist(points[i], bins=15, edgecolor = 'black', color = colors[i],
+            label = agents[i].name + " " + str(i) + " points")
+        __plt.title(agents[i].name + " " + str(i) + " won {:.2f}".format( winners[i]/N*100) + "%")
+        __plt.vlines(__np.mean(points[i]),
+            0,
+            max(res[0])/10,
+            label = 'Points mean',
+            color = 'black',
+            linewidth = 3)
+        __plt.vlines([__np.mean(points[i]) - __np.std(points[i]),
+            __np.mean(points[i]) + __np.std(points[i])],
+            ymin=0,
+            ymax=max(res[0])/10,
+            label = 'Points mean +- std',
+            color = 'red',
+            linewidth = 3)
+        __plt.xlim(0,120); __plt.legend(); 
+        __plt.savefig(f"{evaluation_dir}/{name}_{epoch}")
+        __plt.close()
+        
 def eval_visua_for_self_play(average_points_hist,
                              FLAGS,
                              victory_rates_hist,
                              evaluation_dir,
-                             epoch):
+                             epoch,
+                             name='fig'):
     '''
     Return the std calculated on all the points of the two player 
     '''
@@ -30,7 +56,7 @@ def eval_visua_for_self_play(average_points_hist,
     __plt.xlabel("Evaluation step")
     __plt.ylabel("Points")
     __plt.legend()
-    __plt.savefig(f"{evaluation_dir}/fig_{epoch}")
+    __plt.savefig(f"{evaluation_dir}/{name}_{epoch}")
     __plt.close()
 
     return __np.std(eval_df.values).round(2)

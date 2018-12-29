@@ -7,6 +7,7 @@ import os
 ## our stuff import
 import graphic_visualizations as gv
 import environment as brisc
+from graphic_visualizations import stats_plotter
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
@@ -92,7 +93,7 @@ def evaluate(game, agents, num_evaluations):
 
 
 
-def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
+def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_every, model_dir = "", evaluation_dir = "evaluation_dir"):
 
     # Initializing the list of agents with the agent and a copy of him
     if not os.path.isdir('cur_model_copy'):
@@ -121,8 +122,8 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, model_d
         
         # Evaluation step
         if epoch % evaluate_every == 0:
-            for agent in agents:
-                agent.make_greedy()
+            for ag in agents:
+                ag.make_greedy()
             victory_rates, average_points = evaluate(game, agents, num_evaluations)
             victory_rates_hist.append(victory_rates)
             average_points_hist.append(average_points)
@@ -140,8 +141,8 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, model_d
             std_hist.append(std_cur)
 
             
-            for agent in agents:
-                agent.restore_epsilon()
+            for ag in agents:
+                ag.restore_epsilon()
 
             if victory_rates[0] > best_winning_ratio:
                 best_winning_ratio = victory_rates[0]
@@ -156,6 +157,20 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, model_d
             # Eliminating the oldest agent if maximum number of agents 
             if len(old_agents) > FLAGS.max_old_agents:
                 old_agents.pop(0)
+                
+        # Evaluation against random agent        
+        if epoch % random_every == 0:
+            agents = [agent, RandomAgent()]
+            for ag in agents:
+                ag.make_greedy()            
+                
+            winners, points = evaluate(game, agents, FLAGS.num_evaluations)
+            stats_plotter(agents, points, winners, evaluation_dir,'againstRandom',epoch)
+    
+            for ag in agents:
+                ag.restore_epsilon()
+
+    
 
     return best_winning_ratio
 
@@ -186,6 +201,7 @@ def main(argv=None):
                                     FLAGS.num_epochs,
                                     FLAGS.evaluate_every, 
                                     FLAGS.num_evaluations, 
+                                    FLAGS.against_random_every,
                                     FLAGS.model_dir, 
                                     FLAGS.evaluation_dir)
     print(f'Best winning ratio : {best_winning_ratio}')
@@ -208,7 +224,7 @@ if __name__ == '__main__':
 
     # Training parameters
     tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 61, "Number of training epochs")
+    tf.flags.DEFINE_integer("num_epochs", 60, "Number of training epochs")
     tf.flags.DEFINE_integer("max_old_agents", 100, "Maximum number of old copies of self stored")
 
     # Deep Agent parameters
@@ -222,8 +238,9 @@ if __name__ == '__main__':
 
 
     # Evaluation parameters
-    tf.flags.DEFINE_integer("evaluate_every", 30, "Evaluate model after this many steps (default: 1000)")
-    tf.flags.DEFINE_integer("num_evaluations", 100, "Evaluate on these many episodes for each test (default: 500)")
+    tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
+    tf.flags.DEFINE_integer("against_random_every", 31, "Evaluate model after this many steps (default: 1000)")
+    tf.flags.DEFINE_integer("num_evaluations", 200, "Evaluate on these many episodes for each test (default: 500)")
 
     FLAGS = tf.flags.FLAGS
 
