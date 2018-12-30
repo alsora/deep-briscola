@@ -18,8 +18,8 @@ Self play implementation branch
 
 
 		<p float="left">
-			<img src="Training 70000 epochs/Graphics/againstRandom_58000_QAgent.png" align="center" width=500 height = 300 />
-			<img src="Training 70000 epochs/Graphics/againstRandom_58000_Random Agent.png" align="center" width=500 height = 300/>
+			<img src="Training 70000 epochs/Graphics/againstRandom_58000_QAgent.png" align="center" width=400 height = 300 />
+			<img src="Training 70000 epochs/Graphics/againstRandom_58000_Random Agent.png" align="center" width=400 height = 300/>
 		</p>
 		<p float="left">
 			<img src="Training 70000 epochs/Graphics/againstRandom_4000_QAgent.png" align="center" width=500 height = 300 />
