@@ -12,9 +12,9 @@ Self play implementation branch
 	* An other issue is that the variance of winning rate doesn't decline over time. We can see from the graph below that its time series is almost stationary. The agent is not properly learning.
 
 
-	Solarized dark             |  
+	Solarized dark             | 
 	:-------------------------:|
-	![](https://github.com/alsora/deep-briscola/blob/self_play/Training\ 70000\ epochs/Graphics/last.png)  |
+	![](<img src="Training 70000 epochs/Graphics/last.png" align="middle" />)  |  
 
 
 		
