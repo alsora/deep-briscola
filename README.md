@@ -13,9 +13,21 @@ Self play implementation branch
 
 		<img src="Training 70000 epochs/Graphics/last.png" align="middle" />
 
-	* The best result obtained against a random agent is 75% of winning rate. This is 
+	* The best result obtained against a random bot is 75% of winning rate. 
+	* This is not a good result since a very simple hard coded bot win 79.5% of matches against the random bot. We can see from the graph below that the trained agent doesn't allow the random bot to win the match with the maximum score achievable (120) but neither he manages to win with that score.
 
-		<img src="Training 70000 epochs/Graphics/againstRandom_58000_QAgent.png" align="middle" width=500 height = 300 />
-		<img src="Training 70000 epochs/Graphics/againstRandom_58000_Random Agent.png" align="middle" width=500 height = 300/>
+
+		<p float="left">
+			<img src="Training 70000 epochs/Graphics/againstRandom_58000_QAgent.png" align="center" width=500 height = 300 />
+			<img src="Training 70000 epochs/Graphics/againstRandom_58000_Random Agent.png" align="center" width=500 height = 300/>
+		</p>
+		<p float="left">
+			<img src="Training 70000 epochs/Graphics/againstRandom_4000_QAgent.png" align="center" width=500 height = 300 />
+			<img src="Training 70000 epochs/Graphics/againstRandom_4000_Random Agent.png" align="center" width=500 height = 300/>
+		</p>
+
+
+
+
 
 
