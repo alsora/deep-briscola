@@ -14,7 +14,7 @@ Self play implementation branch
 
 	Solarized dark             |  
 	:-------------------------:|
-	![](https://github.com/alsora/deep-briscola/blob/self_play/Training 70000 epochs/Graphics/last.png)  |
+	![](https://github.com/alsora/deep-briscola/blob/self_play/Training\ 70000\ epochs/Graphics/last.png)  |
 
 
 		
