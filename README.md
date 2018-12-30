@@ -15,7 +15,7 @@ Self play implementation branch
 
 	* The best result obtained against a random agent is 75% of winning rate.
 
-<img src="Training 70000 epochs/Graphics/againstRandom_58000_QAgent.png" align="middle" />
-<img src="Training 70000 epochs/Graphics/againstRandom_58000_Random Agent.png" align="middle" />
+<img src="Training 70000 epochs/Graphics/againstRandom_58000_QAgent.png" align="middle" width=500 height = 300 />
+<img src="Training 70000 epochs/Graphics/againstRandom_58000_Random Agent.png" align="middle" width=500 height = 300/>
 
 

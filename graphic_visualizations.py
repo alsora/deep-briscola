@@ -85,7 +85,7 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 def summ_vis_self_play(victory_rates_hist,
                        std_hist,
                        FLAGS):
-    df = __np.vstack([__np.array(victory_rates_hist).T,__np.array(std_hist)]).T
+    df = __np.vstack([__np.array(victory_rates_hist).T,__np.array(std_hist)]).T / FLAGS.num_evaluations
     vict_rate = __pd.DataFrame(df, columns = ["Agent 0 win_rate","Agent 1 win_rate", "Std"])
     
     vict_rate['Agent 0 win_rate'].plot(secondary_y=False, 

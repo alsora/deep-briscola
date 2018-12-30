@@ -183,12 +183,17 @@ def main(argv=None):
 
     global victory_rates_hist
     victory_rates_hist  = []
-    
     global average_points_hist 
     average_points_hist = []
-    
     global std_hist
     std_hist = []
+    
+    global victory_rates_hist_against_Random
+    victory_rates_hist_against_Random  = []
+    global average_points_hist_against_Random
+    average_points_hist_against_Random = []
+    global std_hist_against_Random
+    std_hist_against_Random = []
     
     # Initializing the environment
     game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
