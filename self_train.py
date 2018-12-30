@@ -144,9 +144,7 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
             for ag in agents:
                 ag.restore_epsilon()
 
-            if victory_rates[0] > best_winning_ratio:
-                best_winning_ratio = victory_rates[0]
-                agent.save_model(model_dir)
+
                 
             # After the evaluation we add the agent to the old agents
             agent.save_model('cur_model_copy')
@@ -169,7 +167,11 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
     
             for ag in agents:
                 ag.restore_epsilon()
-
+                
+            # Saving the model if the agents permorm better against random agent
+            if victory_rates[0] > best_winning_ratio:
+                best_winning_ratio = victory_rates[0]
+                agent.save_model(model_dir)
     
 
     return best_winning_ratio
@@ -224,7 +226,7 @@ if __name__ == '__main__':
 
     # Training parameters
     tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 60, "Number of training epochs")
+    tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
     tf.flags.DEFINE_integer("max_old_agents", 100, "Maximum number of old copies of self stored")
 
     # Deep Agent parameters
@@ -239,7 +241,7 @@ if __name__ == '__main__':
 
     # Evaluation parameters
     tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
-    tf.flags.DEFINE_integer("against_random_every", 31, "Evaluate model after this many steps (default: 1000)")
+    tf.flags.DEFINE_integer("against_random_every", 2000, "Evaluate model after this many steps (default: 1000)")
     tf.flags.DEFINE_integer("num_evaluations", 200, "Evaluate on these many episodes for each test (default: 500)")
 
     FLAGS = tf.flags.FLAGS

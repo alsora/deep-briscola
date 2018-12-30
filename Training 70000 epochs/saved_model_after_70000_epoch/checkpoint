@@ -1,0 +1,3 @@
+model_checkpoint_path: "."
+all_model_checkpoint_paths: "../cur_model_copy"
+all_model_checkpoint_paths: "."

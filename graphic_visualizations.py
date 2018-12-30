@@ -25,7 +25,7 @@ def stats_plotter(agents, points, winners, evaluation_dir,name,epoch):
             color = 'red',
             linewidth = 3)
         __plt.xlim(0,120); __plt.legend(); 
-        __plt.savefig(f"{evaluation_dir}/{name}_{epoch}")
+        __plt.savefig(f"{evaluation_dir}/{name}_{epoch}_{agents[i].name}")
         __plt.close()
         
 def eval_visua_for_self_play(average_points_hist,
