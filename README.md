@@ -36,6 +36,11 @@ Self play implementation branch
 
 	TODO list:
 	* Changing the reward function in order to make clearer that we want the agent to win.
+	* Trying new architecture like PPO 
+	* Changing the settings
+
+	Current goal:
+	* Make an agent better than the simple hard coded bot
 
 
 
