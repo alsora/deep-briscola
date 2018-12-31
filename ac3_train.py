@@ -169,7 +169,7 @@ class Environment(threading.Thread):
 #            for ag in self.agents:
 #                ag.restore_epsilon()  
 #                
-                
+        self.rewards_hist.append()        
         R = sum(self.game.rewards_hist[1])
         return R
 
