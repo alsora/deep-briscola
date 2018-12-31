@@ -218,8 +218,8 @@ def main(argv=None):
     
     # run time
     #time.sleep(FLAGS.run_time)
-    time.sleep(60*5)
     
+    input("insert something to stop:")
     
     for e in envs:
     	e.stop()
@@ -242,12 +242,14 @@ def main(argv=None):
     e = envs[1]
     print(e.epoch)
     
-    agents = [e.agents[1], AIAgent()]
-    for ag in agents:
-        ag.make_greedy()            
+    e.agents[1].make_greedy()            
         
-    winners, points = evaluate(e.game, agents, 1000)
+    
+    winners, points = evaluate(e.game, [e.agents[1], AIAgent()], 1000)
     stats_plotter(e.agents, points, winners, 'evaluation_dir' ,'final test against ai','')
+    
+    winners, points = evaluate(e.game, [e.agents[1], RandomAgent()], 1000)
+    stats_plotter(e.agents, points, winners, 'evaluation_dir' ,'final test against Random','')
 
     for ag in e.agents:
         ag.restore_epsilon()
