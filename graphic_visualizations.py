@@ -7,6 +7,7 @@ def stats_plotter(agents, points, winners, evaluation_dir,name,epoch):
     colors = ['green', 'lightblue']
 
     for i in range(len(agents)):
+        
         __plt.figure(figsize = (10,6))
         res = __plt.hist(points[i], bins=15, edgecolor = 'black', color = colors[i],
             label = agents[i].name + " " + str(i) + " points")

@@ -125,6 +125,7 @@ class Environment(threading.Thread):
         self.victory_rates_hist = []
         self.average_points_hist = []
         self.std_hist = []
+        self.rewards_hist = []
         
         # Initialize the agents
         # TODO : give the possibility to choose the opponent
@@ -243,17 +244,21 @@ def main(argv=None):
     print(e.epoch)
     
     e.agents[1].make_greedy()            
-        
     
-    winners, points = evaluate(e.game, [e.agents[1], AIAgent()], 1000)
-    stats_plotter(e.agents, points, winners, 'evaluation_dir' ,'final test against ai','')
+    agents = [e.agents[1], AIAgent()]
+    winners, points = evaluate(e.game, agents, 300)
+    stats_plotter(agents, points, winners, 'evaluation_dir' ,'final test against ai','')
     
-    winners, points = evaluate(e.game, [e.agents[1], RandomAgent()], 1000)
-    stats_plotter(e.agents, points, winners, 'evaluation_dir' ,'final test against Random','')
+    agents = [e.agents[1], RandomAgent()]
+    winners, points = evaluate(e.game, agents, 300)
+    stats_plotter(agents, points, winners, 'evaluation_dir' ,'final test against Random','')
 
     for ag in e.agents:
         ag.restore_epsilon()
         
+        
+    e.re        
+
     
 
 

@@ -33,7 +33,7 @@ class Brain:
         self.gamma_n = gamma_n    
         self.none_state = none_state
         
-        self.session = tf.Session()
+        self.session = tf.Session(config=tf.ConfigProto(log_device_placement=True))
         K.set_session(self.session)
         K.manual_variable_initialization(True)
 
