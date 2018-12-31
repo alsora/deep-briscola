@@ -143,7 +143,7 @@ class Brain:
             # if provided output_dir does not already exists, create it
             os.mkdir(output_dir)
 
-        self.saver.save(self.session, "./" + output_dir + '/')
+        self.save(self.session, "./" + output_dir + '/')
 
 
     def load_model(self, saved_model_dir):

@@ -236,7 +236,8 @@ def main(argv=None):
 
     # TEST
     
-    brain.save_model(FLAGS.model_dir)
+    # TODO : add a functioning save_model function
+    # brain.save_model(FLAGS.model_dir)
 
     e = envs[1]
     print(e.epoch)
