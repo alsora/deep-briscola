@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-import time, random, threading
+import time, random, threading, os
 
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
@@ -18,9 +18,48 @@ from networks.ac3 import Brain as AC3_Brain
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
-from agents.ac3_agent import Agent
+from agents.ac3_agent import AgentAC3
 
 
+
+def play_episode(game, agents):
+
+    game.reset()
+    keep_playing = True
+    while keep_playing:
+
+        # action step
+        players_order = game.get_players_order()
+        for player_id in players_order:
+
+            player = game.players[player_id]
+            agent = agents[player_id]
+            
+            # agent observes state before acting
+            agent.observe(game, player, game.deck)
+            available_actions = game.get_player_actions(player_id)
+            action = agent.select_action(available_actions)
+
+            game.play_step(action, player_id)
+
+        
+        rewards = game.get_rewards_from_step()
+        # update agents
+        for i, player_id in enumerate(players_order):
+            player = game.players[player_id]
+            agent = agents[player_id]
+            # agent observes new state after acting
+            agent.observe(game, player, game.deck)
+
+            reward = rewards[i]
+            # We want to update only the real agent, not its past copies
+            if agent.name != 'copy':   
+                agent.update(reward)
+
+        # update the environment
+        keep_playing = game.draw_step()
+
+    return game.end_game()
 
 
 
@@ -35,90 +74,19 @@ def evaluate(game, agents, num_evaluations):
         game.reset()
         keep_playing = True
 
-        
-        # capturing the state of the game
-        s=np.zeros(num_state)
-        players_order = game.get_players_order()
-        for player_id in players_order:
-            agent = agents[player_id]
-            if agent.name == 'AC3':
-                player = game.players[player_id]
-        # add hand to s
-        for i, card in enumerate(player.hand):
-            number_index = i * 14 + card.number
-            s[number_index] = 1
-            seed_index = i * 14 + 10 + card.seed
-            s[seed_index] = 1
-        # add played cards to state
-        for i, card in enumerate(game.played_cards):
-            number_index = (i + 3) * 14 + card.number
-            s[number_index] = 1
-            seed_index = (i + 3) * 14 + 10 + card.seed
-            s[seed_index] = 1
-        # add briscola to state
-        number_index = 4 * 14 + game.briscola.number
-        s[number_index] = 1
-        seed_index = 4 * 14 + 10 + game.briscola.seed
-        s[seed_index] = 1
-
-
-
         while keep_playing:
-            
 
             players_order = game.get_players_order()
             for player_id in players_order:
-                
+
                 player = game.players[player_id]
                 agent = agents[player_id]
-                
-                if agent.name != 'AC3':
-                    agent.observe(game, player, game.deck)
-                    available_actions = game.get_player_actions(player_id)
-                    a = agent.select_action(available_actions)
-        
-                else:
-                    global frames
 
-                    prob, frames = agent.act(s,frames)
-                    available_actions = game.get_player_actions(player_id)
-                    prob = [prob[i] for i in available_actions]
-                    if sum(prob) != 0:
-                        prob /= sum(prob)
-                        a = np.random.choice(available_actions,p=prob)
-                    else:
-                        a = np.random.choice(available_actions)
-        
-                game.play_step(a, player_id)
-                
-                
-                # capturing the state of the game
-                s=np.zeros(num_state)
-                players_order = game.get_players_order()
-                for player_id in players_order:
-                    agent = agents[player_id]
-                    if agent.name == 'AC3':
-                        player = game.players[player_id]
-                # add hand to s
-                for i, card in enumerate(player.hand):
-                    number_index = i * 14 + card.number
-                    s[number_index] = 1
-                    seed_index = i * 14 + 10 + card.seed
-                    s[seed_index] = 1
-                # add played cards to state
-                for i, card in enumerate(game.played_cards):
-                    number_index = (i + 3) * 14 + card.number
-                    s[number_index] = 1
-                    seed_index = (i + 3) * 14 + 10 + card.seed
-                    s[seed_index] = 1
-                # add briscola to state
-                number_index = 4 * 14 + game.briscola.number
-                s[number_index] = 1
-                seed_index = 4 * 14 + 10 + game.briscola.seed
-                s[seed_index] = 1                
+                agent.observe(game, player, game.deck)
+                available_actions = game.get_player_actions(player_id)
+                action = agent.select_action(available_actions)
 
-
-
+                game.play_step(action, player_id)
 
             winner_player_id, points = game.evaluate_step()
 
@@ -135,161 +103,72 @@ def evaluate(game, agents, num_evaluations):
 
 
 
-
-
+# =============================================================================
+# ENVIROMENT
+# =============================================================================
 
 class Environment(threading.Thread):
     stop_signal = False
-    global num_state
 
-    def __init__(self, eps_start, eps_end, eps_steps, thread_delay, num_actions, gamma, gamma_n, n_step_return):
+    def __init__(self, eps_start, eps_end, eps_steps, thread_delay, gamma, gamma_n, n_step_return):
         
-        
-        self.winner_id_hist  = []
-        self.points_hist = []       
-        
-        self.thread_delay = thread_delay
-        self.num_actions = num_actions
-        
+        # Initialize the threading
         threading.Thread.__init__(self)
+        self.thread_delay = thread_delay
 
-        self.env = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
+        # Initialize the game
+        self.game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
         
+        self.epoch = 0
+        
+        # Initialize statistics
+        self.victory_rates_hist = []
+        self.average_points_hist = []
+        self.std_hist = []
+        
+        # Initialize the agents
+        # TODO : give the possibility to choose the opponent
         self.agents = []
         r_agent = RandomAgent(); self.agents.append(r_agent);
         global brain
-        self.agent = Agent(brain, 
+        self.agent = AgentAC3(brain, 
                       eps_start, 
                       eps_end, 
                       eps_steps, 
-                      num_actions, 
                       gamma, 
                       gamma_n, 
                       n_step_return); self.agents.append(self.agent);
         
 
     def runEpisode(self):
-        self.env.reset()
+        self.game.reset()
 
-        # capturing the state of the game
-        s=np.zeros(num_state)
-        players_order = self.env.get_players_order()
-        for player_id in players_order:
-            agent = self.agents[player_id]
-            if agent.name == 'AC3':
-                player = self.env.players[player_id]
-        # add hand to s
-        for i, card in enumerate(player.hand):
-            number_index = i * 14 + card.number
-
-            s[number_index] = 1
-            seed_index = i * 14 + 10 + card.seed
-            s[seed_index] = 1
-        # add played cards to state
-        for i, card in enumerate(self.env.played_cards):
-            number_index = (i + 3) * 14 + card.number
-            s[number_index] = 1
-            seed_index = (i + 3) * 14 + 10 + card.seed
-            s[seed_index] = 1
-        # add briscola to state
-        number_index = 4 * 14 + self.env.briscola.number
-        s[number_index] = 1
-        seed_index = 4 * 14 + 10 + self.env.briscola.seed
-        s[seed_index] = 1
-
-
-        R = 0
+        winner_player_id, winner_points = play_episode(self.game, self.agents)
+        self.epoch += 1
         
-        
-        keep_playing = True
-        while keep_playing:    
-            time.sleep(self.thread_delay) # yield 
-
-
-
-            # action step 
-            # TODO : refactor this code, too messy
-            players_order = self.env.get_players_order()
-            for player_id in players_order:
+        if self.epoch % 100 == 0:
+            for ag in self.agents:
+                ag.make_greedy()
+            victory_rates, average_points = evaluate(self.game, self.agents, 100)#num_evaluation
+            self.victory_rates_hist.append(victory_rates)
+            self.average_points_hist.append(average_points)
+            
+            # EVALUATION VISUALISATION
+            if not os.path.isdir("evaluation_dir"):
+                os.mkdir("evaluation_dir")
+            
+            std_cur = gv.eval_visua_for_self_play(self.average_points_hist,
+                             FLAGS,
+                             self.victory_rates_hist,
+                             "evaluation_dir",
+                             self.epoch)
+            # Storing std
+            self.std_hist.append(std_cur)
+            for ag in self.agents:
+                ag.restore_epsilon()  
                 
-                player = self.env.players[player_id]
-                agent = self.agents[player_id]
                 
-                if agent.name != 'AC3':
-                    agent.observe(self.env, player, self.env.deck)
-                    available_actions = self.env.get_player_actions(player_id)
-                    a = agent.select_action(available_actions)
-        
-                else:
-                    global frames
-
-                    prob, frames = agent.act(s,frames)
-                    available_actions = self.env.get_player_actions(player_id)
-                    prob = [prob[i] for i in available_actions]
-                    if sum(prob) != 0:
-                        prob /= sum(prob)
-                        a = np.random.choice(available_actions,p=prob)
-                    else:
-                        a = np.random.choice(available_actions)
-        
-                self.env.play_step(a, player_id)
-
-            # the last player is the agent so the varibles stored are its 
-
-
-            # capturing the next state
-            
-            s_=np.zeros(num_state)
-            # add hand to s
-            
-            players_order = self.env.get_players_order()
-            for player_id in players_order:
-                agent = self.agents[player_id]
-                if agent.name == 'AC3':
-                    player = self.env.players[player_id]
-
-            for i, card in enumerate(player.hand):
-                number_index = i * 14 + card.number
-                s_[number_index] = 1
-                seed_index = i * 14 + 10 + card.seed
-                s_[seed_index] = 1
-            # add played cards to state
-            for i, card in enumerate(self.env.played_cards):
-                number_index = (i + 3) * 14 + card.number
-                s_[number_index] = 1
-                seed_index = (i + 3) * 14 + 10 + card.seed
-                s_[seed_index] = 1
-            # add briscola to state
-            number_index = 4 * 14 + self.env.briscola.number
-            s_[number_index] = 1
-            seed_index = 4 * 14 + 10 + self.env.briscola.seed
-            s_[seed_index] = 1
-
-
-
-
-            players_order = self.env.get_players_order()
-            i = 0
-            for player_id in players_order:
-                agent = self.agents[player_id]
-                if agent.name == 'AC3':
-                    break
-                i += 1
-            r = self.env.get_rewards_from_step()[i]
-
-            keep_playing = self.env.draw_step()
-
-            if not keep_playing: # terminal state
-                s_ = None
-                r = 2 if r > 0 else -2
-                winner_player_id, winner_points = self.env.end_game()
-
-            self.agent.train(s, a, r, s_)
-
-            s = s_
-            R += r
-            
-
+        R = sum(self.game.rewards_hist[1])
         return R
 
     def run(self):
@@ -297,20 +176,7 @@ class Environment(threading.Thread):
             self.runEpisode()
 
     def stop(self):
-        
-    #   TODO : adding make_greedy function to ac3 agent
-#        for ag in agents:
-#            ag.make_greedy()
-    
-    
-        # TODO : adding num_evaluation correctly
-        victory_rates, average_points = evaluate(self.env, self.agents, 150)
-    
-    
-        
-        
         self.stop_signal = True
-        return victory_rates, average_points
 
 
 
@@ -343,19 +209,15 @@ class Optimizer(threading.Thread):
 
 
 
-frames = 0
-num_state = 70
-
 
 def main(argv=None):
     
-    brain = AC3_Brain(3, num_state, FLAGS.loss_v, FLAGS.loss_entropy, FLAGS.learning_rate, FLAGS.min_batch, FLAGS.gamma_n, np.zeros(num_state))
+    brain = AC3_Brain(FLAGS.loss_v, FLAGS.loss_entropy, FLAGS.learning_rate, FLAGS.min_batch, FLAGS.gamma_n, np.zeros(70))
 
     envs = [Environment(FLAGS.eps_start,
                     FLAGS.eps_stop,
                     FLAGS.eps_step,
                     FLAGS.thread_delay,
-                    3,
                     FLAGS.gamma, 
                     FLAGS.gamma_n, 
                     FLAGS.n_step_return) for _ in range(FLAGS.threads)]
@@ -367,7 +229,8 @@ def main(argv=None):
     	e.start()
     
     # run time
-    time.sleep(FLAGS.run_time)
+    #time.sleep(FLAGS.run_time)
+    time.sleep(180)
     
     data = []
     
@@ -384,11 +247,20 @@ def main(argv=None):
     print("Training finished")
     
     
+
+    # TEST
     
+    e = envs[1]
     
-evaluate(envs[0].env, envs[0].agents, 100)
-    
-    
+    for ag in e.agents:
+        ag.make_greedy()            
+        
+    winners, points = evaluate(e.game, e.agents, 100)
+    stats_plotter(e.agents, points, winners, 'evaluation_dir' ,'againstRandom','test')
+
+    for ag in e.agents:
+        ag.restore_epsilon()
+        
     
 
 
@@ -401,9 +273,9 @@ if __name__ == '__main__':
     tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
 
     # Training parameters
-    tf.flags.DEFINE_integer("run_time", 30, '')
-    tf.flags.DEFINE_integer("threads", 8, '')
-    tf.flags.DEFINE_integer("optimizers", 2, '')
+    tf.flags.DEFINE_integer("run_time", 3, '')
+    tf.flags.DEFINE_integer("threads", 2, '')
+    tf.flags.DEFINE_integer("optimizers", 1, '')
     tf.flags.DEFINE_integer("n_step_return", 8, '')
     tf.flags.DEFINE_integer("min_batch", 32, "Batch Size")
     tf.flags.DEFINE_integer("num_epochs", 32, "Number of training epochs")

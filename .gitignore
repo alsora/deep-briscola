@@ -1,3 +1,15 @@
+# CUSTOM	
+evaluation_dir*/
+__pycache__
+cur_model_copy/
+
+
+
+
+
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -91,6 +91,12 @@ class BriscolaDeck:
         current_deck_size = len(self.current_deck)
         current_deck_size += 1 if self.briscola else 0
         return current_deck_size
+    
+    def card_value(self,card_br):
+        card, br = card_br
+        br_seed = br.seed
+        card_value = (card.seed == br_seed) * 10 + card.points
+        return card_value
 
 
 
@@ -141,6 +147,8 @@ class BriscolaGame:
         self.num_players = num_players
         self.deck = BriscolaDeck()
         self.configure_logger(verbosity)
+        
+        self.rewards_hist = [[],[]]
 
 
     def configure_logger(self, verbosity):
@@ -179,19 +187,11 @@ class BriscolaGame:
                 self.players[i].draw(self.deck)
 
 
-    def reorder_hand(self, player_id):
-        ''' reorders the cards in a player hand from strongest to weakest,
-            taking briscola seed into account
-        '''
-        player = self.players[player_id]
-
-        # bubble sort algorithm using scoring() as comparator
-        for passnum in range(len(player.hand)-1,0,-1):
-            for i in range(passnum):
-                if scoring(self.briscola.seed, player.hand[i], player.hand[i+1], keep_order=False):
-                    temp = player.hand[i]
-                    player.hand[i] = player.hand[i+1]
-                    player.hand[i+1] = temp
+    def reorder_hand(self):
+        for p in self.players:
+            to_sort = [(card,self.briscola) for card in p.hand]
+            to_sort.sort(key=self.deck.card_value)
+            p.hand = [card_br[0] for card_br in to_sort]
 
 
     def get_player_actions(self, player_id):
@@ -245,14 +245,21 @@ class BriscolaGame:
         winner_player_id, points = self.evaluate_step()
 
         rewards = []
-        for player_id in self.get_players_order():
-            player = self.players[player_id]
+        if not self.check_end_game():
+            rewards = [-0.01,-0.01]
+            rewards[winner_player_id] = .01
+        else: 
+            winner_id, winner_points = self.get_winner()
 
-            reward = points if player_id is winner_player_id else -points
-            #reward = points if player_id is winner_player_id else 0
-
-            rewards.append(reward)
-
+            if winner_points != 60:            
+                rewards = [-1,-1]
+                rewards[winner_id] = 1
+            else:
+                rewards = [0,0]
+        
+        self.rewards_hist[0].append(rewards[0])                
+        self.rewards_hist[1].append(rewards[1])                
+        
         return rewards
 
 
@@ -273,8 +280,7 @@ class BriscolaGame:
 
 
     def check_end_game(self):
-        ''' check if the game is ended'''
-        return self.deck.end_deck
+        return len(self.players[0].hand) == 0
 
 
     def get_winner(self):

@@ -41,6 +41,9 @@ class QAgent():
             each card is array of size 14, separating one hot encoded number and seed i.e. [number_one_hot, seed_one_hot]
             if there are no cards at a particular location, the array is all zeros.
         '''
+        
+        # Reordering the player hand in descending order (low -> high)
+        game.reorder_hand()
 
         state=np.zeros(self.n_features)
         # add hand to state

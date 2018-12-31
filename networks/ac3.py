@@ -22,10 +22,10 @@ class Brain:
     train_queue = [ [], [], [], [], [] ]	# s, a, r, s', s' terminal mask
     lock_queue = threading.Lock()
 
-    def __init__(self, num_actions, num_states, loss_v, loss_entropy, learning_rate, min_batch, gamma_n, none_state):
+    def __init__(self, loss_v, loss_entropy, learning_rate, min_batch, gamma_n, none_state):
         
-        self.num_actions = num_actions
-        self.num_states = num_states
+        self.num_actions = 3
+        self.num_states = 70
         self.loss_v = loss_v
         self.loss_entropy = loss_entropy
         self.learning_rate = learning_rate
@@ -120,17 +120,17 @@ class Brain:
 
     def predict(self, s):
         with self.default_graph.as_default():
-            p, v = self.model.predict(s)
+            p, v = self.model.predict(s.reshape(1,70))
             return p, v
 
     def predict_p(self, s):
         with self.default_graph.as_default():
-            p, v = self.model.predict(s)		
+            p, v = self.model.predict(s.reshape(1,70))		
             return p
 
     def predict_v(self, s):
         with self.default_graph.as_default():
-            p, v = self.model.predict(s)		
+            p, v = self.model.predict(s.reshape(1,70))		
             return v
 
 
