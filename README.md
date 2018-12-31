@@ -1,26 +1,10 @@
 # deep-briscola
 
-Tensorflow deep reinforcement learning agent playing Briscola card game.
-
-[**What is Briscola??**](https://en.wikipedia.org/wiki/Briscola)
+AC3 algorithm
 
 
-This repository contains a Briscola game environment where different agents can play.
-
- - `RandomAgent`: choose each move in a random fashion
- - `AIAgent`: knows the rules and the strategies for winning the game
- - `DeepAgent`: agent trained using deep reinforcement learning
- - `HumanAgent`: yourself
+### Tutorial links 
+[Theory](https://jaromiru.com/2017/02/16/lets-make-an-a3c-theory/)
+[Practize](https://jaromiru.com/2017/03/26/lets-make-an-a3c-implementation/)
 
 
-## Train a model
-
-    $ python train.py --saved_model saved_model_dir
-
-## Play against AI Agent
-
-    $ python human_vs_ai.py
-
-## Play against trained deep agent
-
-    $ python human_vs_ai.py --saved_model saved_model_dir
