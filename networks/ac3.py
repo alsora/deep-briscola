@@ -11,7 +11,7 @@
 import numpy as np
 import tensorflow as tf
 
-import time, threading
+import time, threading, os
 
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input,Dense
@@ -134,8 +134,21 @@ class Brain:
             return v
 
 
+    def save_model(self, output_dir):
+        '''Save the network graph and weights to disk'''
+        if not output_dir:
+            raise ValueError('You have to specify a valid output directory for DeepAgent.save_model')
+
+        if not os.path.exists(output_dir):
+            # if provided output_dir does not already exists, create it
+            os.mkdir(output_dir)
+
+        self.saver.save(self.session, "./" + output_dir + '/')
 
 
+    def load_model(self, saved_model_dir):
+        '''Initialize a new tensorflow session loading network and weights from a saved model'''
+        self.saver.restore(self.session, "./" + saved_model_dir + '/')
 
 
 

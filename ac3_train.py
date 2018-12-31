@@ -146,27 +146,28 @@ class Environment(threading.Thread):
         winner_player_id, winner_points = play_episode(self.game, self.agents)
         self.epoch += 1
         
-        if self.epoch % 100 == 0:
-            for ag in self.agents:
-                ag.make_greedy()
-            victory_rates, average_points = evaluate(self.game, self.agents, 100)#num_evaluation
-            self.victory_rates_hist.append(victory_rates)
-            self.average_points_hist.append(average_points)
-            
             # EVALUATION VISUALISATION
-            if not os.path.isdir("evaluation_dir"):
-                os.mkdir("evaluation_dir")
-            
-            std_cur = gv.eval_visua_for_self_play(self.average_points_hist,
-                             FLAGS,
-                             self.victory_rates_hist,
-                             "evaluation_dir",
-                             self.epoch)
-            # Storing std
-            self.std_hist.append(std_cur)
-            for ag in self.agents:
-                ag.restore_epsilon()  
-                
+            # TODO : there a bug during the plotting 
+#        if self.epoch % 100 == 0:
+#            for ag in self.agents:
+#                ag.make_greedy()
+#            victory_rates, average_points = evaluate(self.game, self.agents, 100)#num_evaluation
+#            self.victory_rates_hist.append(victory_rates)
+#            self.average_points_hist.append(average_points)
+#            
+#            if not os.path.isdir("evaluation_dir"):
+#                os.mkdir("evaluation_dir")
+#            
+#            std_cur = gv.eval_visua_for_self_play(self.average_points_hist,
+#                             FLAGS,
+#                             self.victory_rates_hist,
+#                             "evaluation_dir",
+#                             self.epoch)
+#            # Storing std
+#            self.std_hist.append(std_cur)
+#            for ag in self.agents:
+#                ag.restore_epsilon()  
+#                
                 
         R = sum(self.game.rewards_hist[1])
         return R
@@ -177,20 +178,6 @@ class Environment(threading.Thread):
 
     def stop(self):
         self.stop_signal = True
-
-
-
-
-
-#def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
-#
-#    best_winning_ratio = -1
-#    for epoch in range(1, num_epochs + 1):
-#        print ("Epoch: ", epoch, end='\r')
-#
-#        game_winner_id, winner_points = play_episode(game, agents)
-#
-#    return best_winning_ratio
 
 
 #---------
@@ -214,6 +201,7 @@ def main(argv=None):
     
     brain = AC3_Brain(FLAGS.loss_v, FLAGS.loss_entropy, FLAGS.learning_rate, FLAGS.min_batch, FLAGS.gamma_n, np.zeros(70))
 
+    # TRAINING
     envs = [Environment(FLAGS.eps_start,
                     FLAGS.eps_stop,
                     FLAGS.eps_step,
@@ -230,12 +218,11 @@ def main(argv=None):
     
     # run time
     #time.sleep(FLAGS.run_time)
-    time.sleep(180)
+    time.sleep(60*5)
     
-    data = []
     
     for e in envs:
-    	data.append(e.stop())
+    	e.stop()
     for e in envs:
     	e.join()
     
@@ -246,17 +233,20 @@ def main(argv=None):
     
     print("Training finished")
     
-    
 
     # TEST
     
+    brain.save_model(FLAGS.model_dir)
+
     e = envs[1]
+    print(e.epoch)
     
-    for ag in e.agents:
+    agents = [e.agents[1], AIAgent()]
+    for ag in agents:
         ag.make_greedy()            
         
-    winners, points = evaluate(e.game, e.agents, 100)
-    stats_plotter(e.agents, points, winners, 'evaluation_dir' ,'againstRandom','test')
+    winners, points = evaluate(e.game, agents, 1000)
+    stats_plotter(e.agents, points, winners, 'evaluation_dir' ,'final test against ai','')
 
     for ag in e.agents:
         ag.restore_epsilon()
@@ -274,8 +264,8 @@ if __name__ == '__main__':
 
     # Training parameters
     tf.flags.DEFINE_integer("run_time", 3, '')
-    tf.flags.DEFINE_integer("threads", 2, '')
-    tf.flags.DEFINE_integer("optimizers", 1, '')
+    tf.flags.DEFINE_integer("threads", 8, '')
+    tf.flags.DEFINE_integer("optimizers", 2, '')
     tf.flags.DEFINE_integer("n_step_return", 8, '')
     tf.flags.DEFINE_integer("min_batch", 32, "Batch Size")
     tf.flags.DEFINE_integer("num_epochs", 32, "Number of training epochs")
