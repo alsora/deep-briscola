@@ -36,7 +36,7 @@ AC3 algorithm
   The problem is very likely to lie in the structure of the enviroment.
   
   
-  The algorithm and the hyper-parameters were set for the (Cart-Pole)[https://github.com/openai/gym/wiki/CartPole-v0].
+  The algorithm and the hyper-parameters were set for the [Cart-Pole](https://github.com/openai/gym/wiki/CartPole-v0).
   I 've made some tests with other enviroments of open ai and it doesn't work with them.
   We can try to optimize them.
   
