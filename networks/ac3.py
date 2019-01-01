@@ -48,10 +48,14 @@ class Brain:
     def _build_model(self):
 
         l_input = Input( batch_shape=(None, self.num_states) )
-        l_dense = Dense(16, activation='relu')(l_input)
+        l_dense = Dense(128, activation='relu')(l_input)
+        l_dense1 = Dense(256, activation='relu')(l_dense)
+        l_dense2 = Dense(128, activation='relu')(l_dense1)
+        l_dense3 = Dense(64, activation='relu')(l_dense2)
+        l_dense4 = Dense(32, activation='relu')(l_dense3)
 
-        out_actions = Dense(self.num_actions, activation='softmax')(l_dense)
-        out_value   = Dense(1, activation='linear')(l_dense)
+        out_actions = Dense(self.num_actions, activation='softmax')(l_dense4)
+        out_value   = Dense(1, activation='linear')(l_dense4)
 
         model = Model(inputs=[l_input], outputs=[out_actions, out_value])
         model._make_predict_function()	# have to initialize before threading

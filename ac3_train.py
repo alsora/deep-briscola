@@ -169,7 +169,7 @@ class Environment(threading.Thread):
 #            for ag in self.agents:
 #                ag.restore_epsilon()  
 #                
-        self.rewards_hist.append()        
+        self.rewards_hist.append(self.game.rewards_hist[1])        
         R = sum(self.game.rewards_hist[1])
         return R
 
@@ -204,12 +204,12 @@ def main(argv=None):
 
     # TRAINING
     envs = [Environment(FLAGS.eps_start,
-                    FLAGS.eps_stop,
-                    FLAGS.eps_step,
-                    FLAGS.thread_delay,
-                    FLAGS.gamma, 
-                    FLAGS.gamma_n, 
-                    FLAGS.n_step_return) for _ in range(FLAGS.threads)]
+                        FLAGS.eps_stop,
+                        FLAGS.eps_step,
+                        FLAGS.thread_delay,
+                        FLAGS.gamma, 
+                        FLAGS.gamma_n, 
+                        FLAGS.n_step_return) for _ in range(FLAGS.threads)]
     opts = [Optimizer() for i in range(FLAGS.optimizers)]
     
     for o in opts:
@@ -220,7 +220,19 @@ def main(argv=None):
     # run time
     #time.sleep(FLAGS.run_time)
     
-    input("insert something to stop:")
+    while True:
+        inp = input("insert commands here:")
+        
+        if inp == 'epoch':
+            print(e.epoch)
+        
+        elif inp == 'againstRandom':
+            # TODO : implement a test against random during the training
+            pass
+        
+        elif inp == "break":
+            break
+        
     
     for e in envs:
     	e.stop()
@@ -257,7 +269,6 @@ def main(argv=None):
         ag.restore_epsilon()
         
         
-    e.re        
 
     
 
@@ -296,8 +307,6 @@ if __name__ == '__main__':
     FLAGS = tf.flags.FLAGS
 
     tf.app.run()
-
-
 
 
 
