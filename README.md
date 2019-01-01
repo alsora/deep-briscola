@@ -40,7 +40,6 @@ AC3 algorithm
   I 've made some tests with other enviroments of open ai and it doesn't work with them.
   We can try to optimize them.
   
-  
-  
+  I found this discussion on reddit about the differences between AC3 and DQN [AC3 discussion](https://www.reddit.com/r/MachineLearning/comments/67fqv8/da3c_performs_badly_in_mountain_car/). It's very interesting.
   
   
