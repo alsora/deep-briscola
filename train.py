@@ -1,9 +1,9 @@
 import tensorflow as tf
-from statistics import mean
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
+from evaluate import evaluate
 import environment as brisc
 
 
@@ -13,7 +13,7 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
     for epoch in range(1, num_epochs + 1):
         print ("Epoch: ", epoch, end='\r')
 
-        game_winner_id, winner_points = play_episode(game, agents)
+        game_winner_id, winner_points = brisc.play_episode(game, agents)
 
         if epoch % evaluate_every == 0:
             for agent in agents:
@@ -27,83 +27,6 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
 
     return best_total_wins
 
-
-def play_episode(game, agents):
-
-    game.reset()
-    keep_playing = True
-    while keep_playing:
-
-        # action step
-        players_order = game.get_players_order()
-        for player_id in players_order:
-
-            player = game.players[player_id]
-            agent = agents[player_id]
-            # agent observes state before acting
-            agent.observe(game, player, game.deck)
-            available_actions = game.get_player_actions(player_id)
-            action = agent.select_action(available_actions)
-
-            game.play_step(action, player_id)
-
-        rewards = game.get_rewards_from_step()
-        # update agents
-        for i, player_id in enumerate(players_order):
-            player = game.players[player_id]
-            agent = agents[player_id]
-            # agent observes new state after acting
-            agent.observe(game, player, game.deck)
-
-            reward = rewards[i]
-            agent.update(reward)
-
-        # update the environment
-        keep_playing = game.draw_step()
-
-    return game.end_game()
-
-
-def evaluate(game, agents, num_evaluations):
-
-    total_wins = [0] * len(agents)
-    points_history = [ [] for i in range(len(agents))]
-
-    for _ in range(num_evaluations):
-
-        game.reset()
-        keep_playing = True
-
-        while keep_playing:
-
-            players_order = game.get_players_order()
-            for player_id in players_order:
-
-                player = game.players[player_id]
-                agent = agents[player_id]
-
-                agent.observe(game, player, game.deck)
-                available_actions = game.get_player_actions(player_id)
-                action = agent.select_action(available_actions)
-
-                game.play_step(action, player_id)
-
-            winner_player_id, points = game.evaluate_step()
-
-            keep_playing = game.draw_step()
-
-        game_winner_id, winner_points = game.end_game()
-
-        for player in game.players:
-            points_history[player.id].append(player.points)
-            if player.id == game_winner_id:
-                total_wins[player.id] += 1
-
-    print(total_wins)
-    for i in range(len(agents)):
-        print(agents[i].name + " " + str(i) + " won {:.2%}".format(total_wins[i]/num_evaluations), " with average points {:.2f}".format(mean(points_history[i])))
-
-    return total_wins, points_history
 
 
 def main(argv=None):

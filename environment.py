@@ -107,19 +107,14 @@ class BriscolaPlayer:
 
 
     def draw(self, deck):
-        ''' Try to draw a card from the deck and return success or failure'''
+        ''' Try to draw a card from the deck'''
 
         new_card = deck.draw_card()
-        if new_card is None and len(self.hand) is 0:
-            return False
-
         if new_card is not None:
             self.hand.append(new_card)
 
         if len(self.hand) > 3:
             raise ValueError("player.draw caused the player to have more than 3 cards in hand!")
-
-        return True
 
 
     def play_card(self, hand_index):
@@ -207,18 +202,14 @@ class BriscolaGame:
 
 
     def draw_step(self):
-        ''' each player, in order, tries to draw a card. return False if there are no more cards'''
+        ''' each player, in order, tries to draw a card'''
         self.PVP_logger("----------- NEW TURN -----------")
 
         for player_id in self.players_order:
             player = self.players[player_id]
 
-            ret = player.draw(self.deck)
+            player.draw(self.deck)
 
-            if not ret:
-                return False
-
-        return True
 
 
     def play_step(self, action, player_id):
@@ -274,7 +265,14 @@ class BriscolaGame:
 
     def check_end_game(self):
         ''' check if the game is ended'''
-        return self.deck.end_deck
+        end_deck = self.deck.end_deck
+        player_has_cards = False
+        for player in self.players:
+            if player.hand:
+                player_has_cards = True
+                break
+
+        return (end_deck and not player_has_cards)
 
 
     def get_winner(self):
@@ -360,3 +358,40 @@ def scoring(briscola_seed, card_0, card_1, keep_order=True):
         winner = 0 if keep_order or card_0.points > card_1.points else 1
 
     return winner
+
+
+
+def play_episode(game, agents, train=True):
+
+    game.reset()
+    while not game.check_end_game():
+
+        # action step
+        players_order = game.get_players_order()
+        for player_id in players_order:
+
+            player = game.players[player_id]
+            agent = agents[player_id]
+            # agent observes state before acting
+            agent.observe(game, player, game.deck)
+            available_actions = game.get_player_actions(player_id)
+            action = agent.select_action(available_actions)
+
+            game.play_step(action, player_id)
+
+        rewards = game.get_rewards_from_step()
+        # update agents if training mode
+        if train:
+            for i, player_id in enumerate(players_order):
+                player = game.players[player_id]
+                agent = agents[player_id]
+                # agent observes new state after acting
+                agent.observe(game, player, game.deck)
+
+                reward = rewards[i]
+                agent.update(reward)
+
+        # update the environment
+        game.draw_step()
+
+    return game.end_game()
