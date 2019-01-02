@@ -5,7 +5,6 @@ from agents.q_agent import QAgent
 from agents.human_agent import HumanAgent
 
 import environment as brisc
-from train import play_episode
 
 def main(argv=None):
 
@@ -26,7 +25,7 @@ def main(argv=None):
         agent = AIAgent()
         agents.append(agent)
 
-    play_episode(game, agents)
+    brisc.play_episode(game, agents)
 
 
 

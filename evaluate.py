@@ -1,12 +1,12 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
-import environment as brisc
-from train import evaluate
+from statistics import mean
 
 from agents.random_agent import RandomAgent
 from agents.ai_agent import AIAgent
 from agents.q_agent import QAgent
+import environment as brisc
 
 
 def stats_plotter(agents, points, total_wins):
@@ -34,9 +34,33 @@ def stats_plotter(agents, points, total_wins):
         plt.xlim(0,120); plt.legend(); plt.show()
 
 
-def main(argv=None):
 
-    game = brisc.BriscolaGame(2,verbosity=brisc.LoggerLevels.TRAIN)
+def evaluate(game, agents, num_evaluations):
+
+    total_wins = [0] * len(agents)
+    points_history = [ [] for i in range(len(agents))]
+
+    for _ in range(num_evaluations):
+
+        game_winner_id, winner_points = brisc.play_episode(game, agents, train=False)
+
+        for player in game.players:
+            points_history[player.id].append(player.points)
+            if player.id == game_winner_id:
+                total_wins[player.id] += 1
+
+    print(total_wins)
+    for i in range(len(agents)):
+        print(agents[i].name + " " + str(i) + " won {:.2%}".format(total_wins[i]/num_evaluations), " with average points {:.2f}".format(mean(points_history[i])))
+
+    return total_wins, points_history
+
+
+
+def main(argv=None):
+    '''Evaluate agent performances against RandomAgent and AIAgent'''
+
+    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TEST)
 
     # Initialize agents
     agents = []
@@ -74,7 +98,6 @@ if __name__ == '__main__':
     tf.flags.DEFINE_string("model_dir", "", "Provide a trained model path if you want to play against a deep agent (default: None)")
 
     # Training parameters
-    tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
     tf.flags.DEFINE_integer("num_evaluations", 20, "Number of training epochs")
 
     FLAGS = tf.flags.FLAGS
