@@ -1,3 +1,8 @@
+# =============================================================================
+# FUNCTIONS TO TRANSLATE RESULTS INTO GRAPHS
+# =============================================================================
+
+
 import numpy as __np
 import pandas as __pd
 import matplotlib.pyplot as __plt
