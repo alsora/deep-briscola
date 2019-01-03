@@ -68,68 +68,72 @@ class DQN:
 
     def create_network(self):
 
-        # input placeholders
-        self.s = tf.placeholder(tf.float32, [None, self.n_features], name='states')  # input State
-        self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
-        self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
-        self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
+        self.graph = tf.Graph()
+        with self.graph.as_default():
 
-        w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
+            # input placeholders
+            self.s = tf.placeholder(tf.float32, [None, self.n_features], name='states')  # input State
+            self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
+            self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
+            self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
 
-        # evaluation network
-        with tf.variable_scope('eval_net'):
-            e1 = tf.layers.dense(self.s, 32, tf.nn.relu, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e1')
-            e2 = tf.layers.dense(e1, 64, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e2')
-            e3 = tf.layers.dense(e2, 64, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e3')
-            e4 = tf.layers.dense(e3, 32, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='e4')
+            w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
-            self.q = tf.layers.dense(e4, self.n_actions, kernel_initializer=w_initializer,
-                                            bias_initializer=b_initializer, name='q')
+            # evaluation network
+            with tf.variable_scope('eval_net'):
+                e1 = tf.layers.dense(self.s, 32, tf.nn.relu, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='e1')
+                e2 = tf.layers.dense(e1, 64, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='e2')
+                e3 = tf.layers.dense(e2, 64, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='e3')
+                e4 = tf.layers.dense(e3, 32, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='e4')
 
-        # target network
-        with tf.variable_scope('target_net'):
-            t1 = tf.layers.dense(self.s_, 32, tf.nn.relu, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t1')
-            t2 = tf.layers.dense(t1, 64, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t2')
-            t3 = tf.layers.dense(t2, 64, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t3')
-            t4 = tf.layers.dense(t3, 32, kernel_initializer=w_initializer,
-                                    bias_initializer=b_initializer, name='t4')
+                self.q = tf.layers.dense(e4, self.n_actions, kernel_initializer=w_initializer,
+                                                bias_initializer=b_initializer, name='q')
 
-            self.q_next = tf.layers.dense(t4, self.n_actions, kernel_initializer=w_initializer,
-                                            bias_initializer=b_initializer, name='q_next')
+            # target network
+            with tf.variable_scope('target_net'):
+                t1 = tf.layers.dense(self.s_, 32, tf.nn.relu, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='t1')
+                t2 = tf.layers.dense(t1, 64, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='t2')
+                t3 = tf.layers.dense(t2, 64, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='t3')
+                t4 = tf.layers.dense(t3, 32, kernel_initializer=w_initializer,
+                                        bias_initializer=b_initializer, name='t4')
 
-        with tf.variable_scope('predictions'):
-            # predicted actions according to evaluation network
-            self.argmax_action = tf.argmax(self.q, 1, output_type=tf.int32, name="argmax")
-        with tf.variable_scope('q_target'):
-            # discounted reward on the target network
-            q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
-            # stop gradient to avoid updating target network
-            self.q_target = tf.stop_gradient(q_target)
-        with tf.variable_scope('q_wrt_a'):
-            # q value of chosen action
-            a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
-            self.q_wrt_a = tf.gather_nd(params=self.q, indices=a_indices)
-        with tf.variable_scope('loss'):
-            # loss computed as difference between predicted q[a] and (current_reward + discount * q_target[best_future_action])
-            self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_wrt_a, name='td_error'))
-        with tf.variable_scope('train'):
-            opt = tf.train.AdamOptimizer(self.learning_rate)
-            grads_and_vars = opt.compute_gradients(self.loss)
-            self._train_op = opt.apply_gradients(grads_and_vars, name="optimizer")
+                self.q_next = tf.layers.dense(t4, self.n_actions, kernel_initializer=w_initializer,
+                                                bias_initializer=b_initializer, name='q_next')
 
-        t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
-        e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
+            with tf.variable_scope('predictions'):
+                # predicted actions according to evaluation network
+                self.argmax_action = tf.argmax(self.q, 1, output_type=tf.int32, name="argmax")
+            with tf.variable_scope('q_target'):
+                # discounted reward on the target network
+                q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
+                # stop gradient to avoid updating target network
+                self.q_target = tf.stop_gradient(q_target)
+            with tf.variable_scope('q_wrt_a'):
+                # q value of chosen action
+                a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
+                self.q_wrt_a = tf.gather_nd(params=self.q, indices=a_indices)
+            with tf.variable_scope('loss'):
+                # loss computed as difference between predicted q[a] and (current_reward + discount * q_target[best_future_action])
+                self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_wrt_a, name='td_error'))
+            with tf.variable_scope('train'):
+                opt = tf.train.AdamOptimizer(self.learning_rate)
+                grads_and_vars = opt.compute_gradients(self.loss)
+                self._train_op = opt.apply_gradients(grads_and_vars, name="optimizer")
 
-        with tf.variable_scope('hard_replacement'):
-            # operator for assiging evaluation network weights to the target network
-            self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
+            t_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='target_net')
+            e_params = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='eval_net')
+
+            with tf.variable_scope('hard_replacement'):
+                # operator for assiging evaluation network weights to the target network
+                self.target_replace_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
+
 
     def get_q_table(self, state):
             ''' Compute q table for current state'''
@@ -173,19 +177,19 @@ class DQN:
         self.learn_step_counter += 1
 
 
-
     def initialize_session(self):
         '''Defines self.sess and initialize the variables'''
-        #self.logger.info("Initializing tf session")
         session_conf = tf.ConfigProto(
             allow_soft_placement = True,
             log_device_placement = False)
-        self.session = tf.Session(config = session_conf)
-        self.session.run(tf.global_variables_initializer())
-        try:
-            self.saver = tf.train.Saver(tf.global_variables(), max_to_keep = 5)
-        except:
-            pass
+
+        self.session = tf.Session(config = session_conf, graph=self.graph)
+
+        with self.graph.as_default():
+            self.init = tf.global_variables_initializer()
+            self.saver = tf.train.Saver()
+
+        self.session.run(self.init)
 
 
     def save_model(self, output_dir):
@@ -198,7 +202,6 @@ class DQN:
             os.mkdir(output_dir)
 
         self.saver.save(self.session, "./" + output_dir + '/')
-
 
 
     def load_model(self, saved_model_dir):
