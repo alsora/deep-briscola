@@ -6,33 +6,8 @@ from statistics import mean
 from agents.random_agent import RandomAgent
 from agents.ai_agent import AIAgent
 from agents.q_agent import QAgent
+from graphic_visualizations import stats_plotter
 import environment as brisc
-
-
-def stats_plotter(agents, points, total_wins):
-    num_evaluations = len(points[0])
-    colors = ['green', 'lightblue']
-
-    for i in range(len(agents)):
-        plt.figure(figsize = (10,6))
-        res = plt.hist(points[i], bins=15, edgecolor = 'black', color = colors[i],
-            label = agents[i].name + " " + str(i) + " points")
-        plt.title(agents[i].name + " " + str(i) + " won {:.2%}".format(total_wins[i]/num_evaluations))
-        plt.vlines(np.mean(points[i]),
-            0,
-            max(res[0])/10,
-            label = 'Points mean',
-            color = 'black',
-            linewidth = 3)
-        plt.vlines([np.mean(points[i]) - np.std(points[i]),
-            np.mean(points[i]) + np.std(points[i])],
-            ymin=0,
-            ymax=max(res[0])/10,
-            label = 'Points mean +- std',
-            color = 'red',
-            linewidth = 3)
-        plt.xlim(0,120); plt.legend(); plt.show()
-
 
 
 def evaluate(game, agents, num_evaluations):
@@ -49,7 +24,7 @@ def evaluate(game, agents, num_evaluations):
             if player.id == game_winner_id:
                 total_wins[player.id] += 1
 
-    print(total_wins)
+    print("\nTotal wins: ",total_wins)
     for i in range(len(agents)):
         print(agents[i].name + " " + str(i) + " won {:.2%}".format(total_wins[i]/num_evaluations), " with average points {:.2f}".format(mean(points_history[i])))
 

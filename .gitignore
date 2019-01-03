@@ -1,3 +1,17 @@
+# CUSTOM
+evaluation_dir*/
+__pycache__
+
+
+
+
+
+
+
+
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -106,4 +120,7 @@ venv.bak/
 # ignore all tensorflow saved files
 *.pb
 *.index
+*.meta
+checkpoint
+.data-*
 variables.data-*

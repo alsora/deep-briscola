@@ -42,7 +42,10 @@ class QAgent():
             if there are no cards at a particular location, the array is all zeros.
         '''
 
-        state=np.zeros(self.n_features)
+        # Reordering the player hand in descending order (high value -> low value)
+        game.reorder_hand(player.id)
+
+        state = np.zeros(self.n_features)
         # add hand to state
         for i, card in enumerate(player.hand):
             number_index = i * 14 + card.number

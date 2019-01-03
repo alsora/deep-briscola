@@ -8,6 +8,8 @@ class LoggerLevels(Enum):
     TEST = 2
     TRAIN = 3
 
+
+
 class BriscolaCard:
 
     def __init__(self):
@@ -311,7 +313,6 @@ class BriscolaGame:
 
 
 
-
 def get_strongest_card(briscola_seed, cards):
     ''' Get the strongest card in the provided set'''
     ordered_winner_id = 0
@@ -358,7 +359,6 @@ def scoring(briscola_seed, card_0, card_1, keep_order=True):
         winner = 0 if keep_order or card_0.points > card_1.points else 1
 
     return winner
-
 
 
 def play_episode(game, agents, train=True):
