@@ -8,6 +8,8 @@ class LoggerLevels(Enum):
     TEST = 2
     TRAIN = 3
 
+
+
 class BriscolaCard:
 
     def __init__(self):
@@ -17,7 +19,6 @@ class BriscolaCard:
         self.number = -1    # number of the card [0, 9]
         self.strength = -1  # ordered number of the card [0, 9]
         self.points = -1    # points value of the card [0, 11]
-
 
 
 
@@ -93,12 +94,6 @@ class BriscolaDeck:
         current_deck_size += 1 if self.briscola else 0
         return current_deck_size
 
-    def card_value(self,card_br):
-        card, br = card_br
-        br_seed = br.seed
-        card_value = (card.seed == br_seed) * 10 + card.points
-        return card_value
-
 
 
 class BriscolaPlayer:
@@ -134,7 +129,6 @@ class BriscolaPlayer:
         except:
             raise ValueError("player.play_card called with invalid hand_index!")
             return None
-
 
 
 
@@ -319,7 +313,6 @@ class BriscolaGame:
 
 
 
-
 def get_strongest_card(briscola_seed, cards):
     ''' Get the strongest card in the provided set'''
     ordered_winner_id = 0
@@ -366,7 +359,6 @@ def scoring(briscola_seed, card_0, card_1, keep_order=True):
         winner = 0 if keep_order or card_0.points > card_1.points else 1
 
     return winner
-
 
 
 def play_episode(game, agents, train=True):
