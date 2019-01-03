@@ -47,9 +47,6 @@ def main(argv=None):
 
     train(game, agents, FLAGS.num_epochs, FLAGS.evaluate_every, FLAGS.num_evaluations, FLAGS.model_dir)
 
-    directory = f"{FLAGS.model_dir}/{FLAGS.model_dir}_{FLAGS.num_epochs}"
-    os.makedirs(directory)
-    agents[0].save_model(directory)
 
 
 if __name__ == '__main__':

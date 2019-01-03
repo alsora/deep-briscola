@@ -193,20 +193,15 @@ class DQN:
         if not output_dir:
             raise ValueError('You have to specify a valid output directory for DeepAgent.save_model')
 
-        if os.path.exists(output_dir):
-            # if provided output_dir already exists, remove it
-            shutil.rmtree(output_dir)
+        if not os.path.exists(output_dir):
+            # if provided output_dir does not already exists, create it
+            os.mkdir(output_dir)
 
-        builder = tf.saved_model.builder.SavedModelBuilder(output_dir)
-        builder.add_meta_graph_and_variables(
-            self.session,
-            [tf.saved_model.tag_constants.SERVING],
-            clear_devices=True)
-        # create a new directory output_dir and store the saved model in it
-        builder.save()
+        self.saver.save(self.session, "./" + output_dir + '/')
+
 
 
     def load_model(self, saved_model_dir):
         '''Initialize a new tensorflow session loading network and weights from a saved model'''
-        tf.saved_model.loader.load(self.session, [tf.saved_model.tag_constants.SERVING], saved_model_dir)
+        self.saver.restore(self.session, "./" + saved_model_dir + '/')
 

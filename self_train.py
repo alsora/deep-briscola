@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import random
+import shutil
+
 
 ## our stuff import
 import graphic_visualizations as gv
@@ -16,47 +19,68 @@ from agents.ai_agent import AIAgent
 
 class CopyAgent(QAgent):
     '''Copied agent. Identical to a QAgent, but does not update itself'''
+    def __init__(self, agent):
+
+        # create a default QAgent
+        super().__init__()
+
+        # make the CopyAgent always greedy
+        self.epsilon = 1.0
+
+        # TODO: find a better way for copying the agent without saving the model
+        # initialize the CopyAgent with the same weights as the passed QAgent
+        if type(agent) is not QAgent:
+            raise TypeError("CopyAgent __init__ requires argument of type QAgent")
+
+        # create a temp directory where to save agent current model
+        if not os.path.isdir('__tmp_model_dir__'):
+            os.makedirs('__tmp_model_dir__')
+
+        agent.save_model('__tmp_model_dir__')
+        super().load_model('__tmp_model_dir__')
+
+        # remove the temp directory after loading the model into the CopyAgent
+        shutil.rmtree('__tmp_model_dir__')
+
+
     def update(self, *args):
         pass
 
 
 
-def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_every, model_dir = "", evaluation_dir = "evaluation_dir"):
+def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
 
-    # Initializing the list of agents with the agent and a copy of him
-    if not os.path.isdir('cur_model_copy'):
-        os.makedirs('cur_model_copy')
-    agent.save_model('cur_model_copy')
-    first_old = CopyAgent()
-    first_old.load_model('cur_model_copy')
-    old_agents = [agent, first_old]
+    # initialize the list of old agents with a copy of the non trained agent
+    old_agents = [CopyAgent(agent)]
 
     # Training starts
-    best_winning_ratio = -1
+    best_total_wins = -1
     for epoch in range(1, num_epochs + 1):
-
-        # picking an agent from the past self
-        old_num = np.random.randint(1,len(old_agents))
-        agents= [agent, old_agents[len(old_agents)-old_num]]
-
         gv.printProgressBar(epoch, num_epochs,
                             prefix = f'Epoch: {epoch}',
                             length= 50)
 
-        # During the playing of the episode the agent learn
+        # picking an agent from the past as adversary
+        agents = [agent, random.choice(old_agents)]
+
+        # Play a briscola game to train the agent
         brisc.play_episode(game, agents)
 
         # Evaluation step
         if epoch % evaluate_every == 0:
-            for ag in agents:
-                ag.make_greedy()
-            victory_rates, average_points = evaluate(game, agents, num_evaluations)
-            victory_rates_hist.append(victory_rates)
-            average_points_hist.append(average_points)
 
-            # EVALUATION VISUALISATION
+            # Evaluation visualization directory
             if not os.path.isdir(evaluation_dir):
                 os.mkdir(evaluation_dir)
+
+            for ag in agents:
+                ag.make_greedy()
+
+            # Evaluation against old copy agent
+            winners, points = evaluate(game, agents, num_evaluations)
+            victory_rates_hist.append(winners)
+            average_points_hist.append(points)
+
             output_path = evaluation_dir + "/fig_" + str(epoch)
             std_cur = gv.eval_visua_for_self_play(average_points_hist,
                              FLAGS,
@@ -65,40 +89,27 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
             # Storing std
             std_hist.append(std_cur)
 
+            # Evaluation against random agent
+            winners, points = evaluate(game, [agent, RandomAgent()], FLAGS.num_evaluations)
+            output_prefix = evaluation_dir + '/againstRandom_' + str(epoch)
+            gv.stats_plotter([agent, RandomAgent()], points, winners, output_prefix=output_prefix)
+
+            # Saving the model if the agent performs better against random agent
+            if winners[0] > best_total_wins:
+                best_total_wins = winners[0]
+                agent.save_model(model_dir)
+
             for ag in agents:
                 ag.restore_epsilon()
 
             # After the evaluation we add the agent to the old agents
-            agent.save_model('cur_model_copy')
-            new_old_agent = CopyAgent()
-            new_old_agent.load_model('cur_model_copy')
-            old_agents.append(new_old_agent)
+            old_agents.append(CopyAgent(agent))
 
             # Eliminating the oldest agent if maximum number of agents
             if len(old_agents) > FLAGS.max_old_agents:
                 old_agents.pop(0)
 
-        # Evaluation against random agent
-        if epoch % random_every == 0:
-            if not os.path.isdir(evaluation_dir):
-                os.mkdir(evaluation_dir)
-            agents = [agent, RandomAgent()]
-            for ag in agents:
-                ag.make_greedy()
-
-            winners, points = evaluate(game, agents, FLAGS.num_evaluations)
-            output_prefix = evaluation_dir + '/againstRandom_' + str(epoch)
-            gv.stats_plotter(agents, points, winners, output_prefix=output_prefix)
-
-            for ag in agents:
-                ag.restore_epsilon()
-
-            # Saving the model if the agent performs better against random agent
-            if winners[0] > best_winning_ratio:
-                best_winning_ratio = winners[0]
-                agent.save_model(model_dir)
-
-    return best_winning_ratio
+    return best_total_wins
 
 
 
@@ -127,15 +138,14 @@ def main(argv=None):
         FLAGS.learning_rate)
 
     # Training
-    best_winning_ratio = self_train(game, agent,
+    best_total_wins = self_train(game, agent,
                                     FLAGS.num_epochs,
                                     FLAGS.evaluate_every,
                                     FLAGS.num_evaluations,
-                                    FLAGS.against_random_every,
                                     FLAGS.model_dir,
                                     FLAGS.evaluation_dir)
-    print(f'Best winning ratio : {best_winning_ratio}')
-    # SUMMARY GRAPH
+    print('Best winning ratio : {:.2%}'.format(best_total_wins/FLAGS.num_evaluations))
+    # Summary graph
     gv.summ_vis_self_play(victory_rates_hist, std_hist, FLAGS)
 
 
@@ -166,65 +176,10 @@ if __name__ == '__main__':
 
     # Evaluation parameters
     tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
-    tf.flags.DEFINE_integer("against_random_every", 2000, "Evaluate model after this many steps (default: 1000)")
     tf.flags.DEFINE_integer("num_evaluations", 200, "Evaluate on these many episodes for each test (default: 500)")
 
     FLAGS = tf.flags.FLAGS
 
     tf.app.run()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

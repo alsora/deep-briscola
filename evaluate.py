@@ -24,7 +24,7 @@ def evaluate(game, agents, num_evaluations):
             if player.id == game_winner_id:
                 total_wins[player.id] += 1
 
-    print(total_wins)
+    print("\nTotal wins: ",total_wins)
     for i in range(len(agents)):
         print(agents[i].name + " " + str(i) + " won {:.2%}".format(total_wins[i]/num_evaluations), " with average points {:.2f}".format(mean(points_history[i])))
 
