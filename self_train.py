@@ -7,89 +7,18 @@ import os
 ## our stuff import
 import graphic_visualizations as gv
 import environment as brisc
-from graphic_visualizations import stats_plotter
+from evaluate import evaluate
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
 
 
-def play_episode(game, agents):
 
-    game.reset()
-    keep_playing = True
-    while keep_playing:
-
-        # action step
-        players_order = game.get_players_order()
-        for player_id in players_order:
-
-            player = game.players[player_id]
-            agent = agents[player_id]
-
-            # agent observes state before acting
-            agent.observe(game, player, game.deck)
-            available_actions = game.get_player_actions(player_id)
-            action = agent.select_action(available_actions)
-
-            game.play_step(action, player_id)
-
-        rewards = game.get_rewards_from_step()
-        # update agents
-        for i, player_id in enumerate(players_order):
-            player = game.players[player_id]
-            agent = agents[player_id]
-            # agent observes new state after acting
-            agent.observe(game, player, game.deck)
-
-            reward = rewards[i]
-            # We want to update only the real agent, not its past copies
-            if agent.name != 'copy':
-                agent.update(reward)
-
-        # update the environment
-        keep_playing = game.draw_step()
-
-    return game.end_game()
-
-
-
-def evaluate(game, agents, num_evaluations):
-
-    total_wins = [0] * len(agents)
-    points_history = [ [] for i in range(len(agents))]
-
-    for _ in range(num_evaluations):
-
-        game.reset()
-        keep_playing = True
-
-        while keep_playing:
-
-            players_order = game.get_players_order()
-            for player_id in players_order:
-
-                player = game.players[player_id]
-                agent = agents[player_id]
-
-                agent.observe(game, player, game.deck)
-                available_actions = game.get_player_actions(player_id)
-                action = agent.select_action(available_actions)
-
-                game.play_step(action, player_id)
-
-            winner_player_id, points = game.evaluate_step()
-
-            keep_playing = game.draw_step()
-
-        game_winner_id, winner_points = game.end_game()
-
-        for player in game.players:
-            points_history[player.id].append(player.points)
-            if player.id == game_winner_id:
-                total_wins[player.id] += 1
-
-    return total_wins, points_history
+class CopyAgent(QAgent):
+    '''Copied agent. Identical to a QAgent, but does not update itself'''
+    def update(self, *args):
+        pass
 
 
 
@@ -99,7 +28,7 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
     if not os.path.isdir('cur_model_copy'):
         os.makedirs('cur_model_copy')
     agent.save_model('cur_model_copy')
-    first_old = QAgent()
+    first_old = CopyAgent()
     first_old.load_model('cur_model_copy')
     old_agents = [agent, first_old]
 
@@ -118,7 +47,7 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
                             length= 50)
 
         # During the playing of the episode the agent learn
-        play_episode(game, agents)
+        brisc.play_episode(game, agents)
 
         # Evaluation step
         if epoch % evaluate_every == 0:
@@ -148,7 +77,7 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
 
             # After the evaluation we add the agent to the old agents
             agent.save_model('cur_model_copy')
-            new_old_agent = QAgent()
+            new_old_agent = CopyAgent()
             new_old_agent.load_model('cur_model_copy')
             old_agents.append(new_old_agent)
 
@@ -163,7 +92,7 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
                 ag.make_greedy()
 
             winners, points = evaluate(game, agents, FLAGS.num_evaluations)
-            stats_plotter(agents, points, winners, evaluation_dir,'againstRandom',epoch)
+            gv.stats_plotter(agents, points, winners, evaluation_dir,'againstRandom',epoch)
 
             for ag in agents:
                 ag.restore_epsilon()

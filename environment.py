@@ -17,7 +17,7 @@ class BriscolaCard:
         self.number = -1    # number of the card [0, 9]
         self.strength = -1  # ordered number of the card [0, 9]
         self.points = -1    # points value of the card [0, 11]
-        
+
 
 
 
@@ -92,7 +92,7 @@ class BriscolaDeck:
         current_deck_size = len(self.current_deck)
         current_deck_size += 1 if self.briscola else 0
         return current_deck_size
-    
+
     def card_value(self,card_br):
         card, br = card_br
         br_seed = br.seed
@@ -134,7 +134,7 @@ class BriscolaPlayer:
         except:
             raise ValueError("player.play_card called with invalid hand_index!")
             return None
-        
+
 
 
 
@@ -180,12 +180,7 @@ class BriscolaGame:
         for _ in range(0,3):
             for i in self.players_order:
                 self.players[i].draw(self.deck)
-                
-    def reorder_hand(self):
-        for p in self.players:
-            to_sort = [(card,self.briscola) for card in p.hand]
-            to_sort.sort(key=self.deck.card_value)
-            p.hand = [card_br[0] for card_br in to_sort]
+
 
     def reorder_hand(self, player_id):
         ''' reorders the cards in a player hand from strongest to weakest,
