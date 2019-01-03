@@ -14,7 +14,6 @@ from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
 
 
-
 class CopyAgent(QAgent):
     '''Copied agent. Identical to a QAgent, but does not update itself'''
     def update(self, *args):
@@ -40,10 +39,8 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
         old_num = np.random.randint(1,len(old_agents))
         agents= [agent, old_agents[len(old_agents)-old_num]]
 
-
-        print(chr(27) + '[2J')
         gv.printProgressBar(epoch, num_epochs,
-                            prefix = f'Agent {old_num} old\nEpoch: {epoch}',
+                            prefix = f'Epoch: {epoch}',
                             length= 50)
 
         # During the playing of the episode the agent learn
@@ -60,20 +57,16 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
             # EVALUATION VISUALISATION
             if not os.path.isdir(evaluation_dir):
                 os.mkdir(evaluation_dir)
-
+            output_path = evaluation_dir + "/fig_" + str(epoch)
             std_cur = gv.eval_visua_for_self_play(average_points_hist,
                              FLAGS,
                              victory_rates_hist,
-                             evaluation_dir,
-                             epoch)
+                             output_path=output_path)
             # Storing std
             std_hist.append(std_cur)
 
-
             for ag in agents:
                 ag.restore_epsilon()
-
-
 
             # After the evaluation we add the agent to the old agents
             agent.save_model('cur_model_copy')
@@ -87,24 +80,25 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, random_
 
         # Evaluation against random agent
         if epoch % random_every == 0:
+            if not os.path.isdir(evaluation_dir):
+                os.mkdir(evaluation_dir)
             agents = [agent, RandomAgent()]
             for ag in agents:
                 ag.make_greedy()
 
             winners, points = evaluate(game, agents, FLAGS.num_evaluations)
-            gv.stats_plotter(agents, points, winners, evaluation_dir,'againstRandom',epoch)
+            output_prefix = evaluation_dir + '/againstRandom_' + str(epoch)
+            gv.stats_plotter(agents, points, winners, output_prefix=output_prefix)
 
             for ag in agents:
                 ag.restore_epsilon()
 
-            # Saving the model if the agents permorm better against random agent
-            if victory_rates[0] > best_winning_ratio:
-                best_winning_ratio = victory_rates[0]
+            # Saving the model if the agent performs better against random agent
+            if winners[0] > best_winning_ratio:
+                best_winning_ratio = winners[0]
                 agent.save_model(model_dir)
 
-
     return best_winning_ratio
-
 
 
 
@@ -143,9 +137,6 @@ def main(argv=None):
     print(f'Best winning ratio : {best_winning_ratio}')
     # SUMMARY GRAPH
     gv.summ_vis_self_play(victory_rates_hist, std_hist, FLAGS)
-
-
-
 
 
 

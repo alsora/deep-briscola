@@ -2,18 +2,19 @@ import numpy as __np
 import pandas as __pd
 import matplotlib.pyplot as __plt
 
-def stats_plotter(agents, points, winners, evaluation_dir,name,epoch):
-    N = len(points[0])
+
+def stats_plotter(agents, points, total_wins, output_prefix = ''):
+    num_evaluations = len(points[0])
     colors = ['green', 'lightblue']
 
     for i in range(len(agents)):
         __plt.figure(figsize = (10,6))
         res = __plt.hist(points[i], bins=15, edgecolor = 'black', color = colors[i],
             label = agents[i].name + " " + str(i) + " points")
-        __plt.title(agents[i].name + " " + str(i) + " won {:.2f}".format( winners[i]/N*100) + "%")
+        __plt.title(agents[i].name + " " + str(i) + " won {:.2%}".format(total_wins[i]/num_evaluations))
         __plt.vlines(__np.mean(points[i]),
-            0,
-            max(res[0])/10,
+            ymin=0,
+            ymax=max(res[0])/10,
             label = 'Points mean',
             color = 'black',
             linewidth = 3)
@@ -24,16 +25,22 @@ def stats_plotter(agents, points, winners, evaluation_dir,name,epoch):
             label = 'Points mean +- std',
             color = 'red',
             linewidth = 3)
-        __plt.xlim(0,120); __plt.legend();
-        __plt.savefig(f"{evaluation_dir}/{name}_{epoch}_{agents[i].name}")
+        __plt.xlim(0,120)
+        __plt.legend()
+
+        if output_prefix:
+            # if an output path is specified, save the plot
+            __plt.savefig(f"{output_prefix}_{agents[i].name}")
+        else:
+            # else show it
+            __plt.show()
         __plt.close()
+
 
 def eval_visua_for_self_play(average_points_hist,
                              FLAGS,
                              victory_rates_hist,
-                             evaluation_dir,
-                             epoch,
-                             name='fig'):
+                             output_path=''):
     '''
     Return the std calculated on all the points of the two player
     '''
@@ -56,13 +63,20 @@ def eval_visua_for_self_play(average_points_hist,
     __plt.xlabel("Evaluation step")
     __plt.ylabel("Points")
     __plt.legend()
-    __plt.savefig(f"{evaluation_dir}/{name}_{epoch}")
+
+    if output_path:
+        # if an output path is specified, save the plot
+        __plt.savefig(output_path)
+    else:
+        # else show it
+        __plt.show()
+
     __plt.close()
 
     return __np.std(eval_df.values).round(2)
 
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = ' '):
     """
     Call in a loop to create terminal progress bar
     @params:
