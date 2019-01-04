@@ -24,3 +24,7 @@ This repository contains a Briscola game environment where different agents can 
 ## Play against trained deep agent
 
     $ python human_vs_ai.py --saved_model saved_model_dir
+
+
+
+

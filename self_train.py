@@ -7,10 +7,12 @@ import random
 import shutil
 
 
-## our stuff import
+## our scripts
 import graphic_visualizations as gv
 import environment as brisc
+
 from evaluate import evaluate
+from utilis import update_readme
 
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
@@ -130,24 +132,30 @@ def main(argv=None):
     std_hist_against_Random = []
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
+    game = brisc.BriscolaGame(verbosity=brisc.LoggerLevels.TRAIN)
 
     # Initialize agent
-    agent = QAgent(
-        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
-        FLAGS.learning_rate)
+    agent = QAgent(FLAGS.epsilon, 
+                   FLAGS.epsilon_increment, 
+                   FLAGS.epsilon_max, 
+                   FLAGS.discount,
+                   FLAGS.learning_rate)
 
     # Training
-    best_total_wins = self_train(game, agent,
-                                    FLAGS.num_epochs,
-                                    FLAGS.evaluate_every,
-                                    FLAGS.num_evaluations,
-                                    FLAGS.model_dir,
-                                    FLAGS.evaluation_dir)
+    best_total_wins = self_train(game, 
+                                 agent,
+                                 FLAGS.num_epochs,
+                                 FLAGS.evaluate_every,
+                                 FLAGS.num_evaluations,
+                                 FLAGS.model_dir,
+                                 FLAGS.evaluation_dir)
     print('Best winning ratio : {:.2%}'.format(best_total_wins/FLAGS.num_evaluations))
+    
     # Summary graph
     gv.summ_vis_self_play(victory_rates_hist, std_hist, FLAGS)
-
+    
+    #Updating the readme
+    update_readme(FLAGS,"Self Playing Training")
 
 
 if __name__ == '__main__':

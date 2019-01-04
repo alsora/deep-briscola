@@ -1,13 +1,16 @@
 import itertools, time, random
 import numpy as np
+
 from enum import Enum
+
+## our scripts
+from utilis import SettingB
 
 class LoggerLevels(Enum):
     DEBUG = 0
     PVP = 1
     TEST = 2
     TRAIN = 3
-
 
 
 class BriscolaCard:
@@ -132,9 +135,25 @@ class BriscolaPlayer:
 
 
 
-class BriscolaGame:
 
-    def __init__(self, num_players = 2, verbosity=LoggerLevels.TEST):
+class BriscolaGame:
+    """
+    Create the enviroment.
+
+    Parameters
+    ----------
+    num_players : int
+        Number of players in the environment.
+        Default : 2
+    verbosity : LoggerLevels
+        LoggerLevels object to determine the kind of verbosity during an episode.
+        Default : Test level
+    setting : SettingsB
+        SettingB object to determine the settings of the environment.
+        Default : None
+    """
+    def __init__(self, num_players = 2, verbosity=LoggerLevels.TEST, settings={}):
+
         self.num_players = num_players
         self.deck = BriscolaDeck()
         self.configure_logger(verbosity)
@@ -211,7 +230,6 @@ class BriscolaGame:
             player = self.players[player_id]
 
             player.draw(self.deck)
-
 
 
     def play_step(self, action, player_id):
