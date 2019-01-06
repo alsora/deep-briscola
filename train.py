@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
     # Evaluation parameters
     parser.add_argument("--evaluate_every", default=1000, help="Evaluate model after this many epochs", type=int)
-    parser.add_argument("--num_evaluations", default=500, help="Evaluate on these many episodes for each test", type=int)
+    parser.add_argument("--num_evaluations", default=500, help="Number of evaluation games against each type of opponent for each test", type=int)
 
     FLAGS = parser.parse_args()
 

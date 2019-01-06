@@ -1,5 +1,5 @@
 import tensorflow as tf
-import matplotlib.pyplot as plt
+import argparse
 import numpy as np
 from statistics import mean
 
@@ -39,27 +39,22 @@ def main(argv=None):
     logger = BriscolaLogger(BriscolaLogger.LoggerLevels.TEST)
     game = brisc.BriscolaGame(2, logger)
 
-    # Initialize agents
-    agents = []
-
-    # first agent is RandomAgent or QAgent if a model is provided
+    # agent to be evaluated is RandomAgent or QAgent if a model is provided
     if FLAGS.model_dir:
-        agent = QAgent()
-        agent.load_model(FLAGS.model_dir)
-        agent.make_greedy()
-        agents.append(agent)
+        eval_agent = QAgent()
+        eval_agent.load_model(FLAGS.model_dir)
+        eval_agent.make_greedy()
     else:
-        agent = RandomAgent()
-        agents.append(agent)
+        eval_agent = RandomAgent()
 
-    # test first agent against RandomAgent
-    agents.append(RandomAgent())
+    # test agent against RandomAgent
+    agents = [eval_agent, RandomAgent()]
 
     total_wins, points_history = evaluate(game, agents, FLAGS.num_evaluations)
     stats_plotter(agents, points_history, total_wins)
 
-    # test first agent against AIAgent
-    agents[1] = AIAgent()
+    # test agent against AIAgent
+    agents = [eval_agent, AIAgent()]
 
     total_wins, points_history = evaluate(game, agents, FLAGS.num_evaluations)
     stats_plotter(agents, points_history, total_wins)
@@ -71,13 +66,12 @@ if __name__ == '__main__':
     # Parameters
     # ==================================================
 
-    # Model directory
-    tf.flags.DEFINE_string("model_dir", "", "Provide a trained model path if you want to play against a deep agent (default: None)")
+    parser = argparse.ArgumentParser()
 
-    # Training parameters
-    tf.flags.DEFINE_integer("num_evaluations", 20, "Number of training epochs")
+    parser.add_argument("--model_dir", default=None, help="Provide a trained model path if you want to play against a deep agent", type=str)
+    parser.add_argument("--num_evaluations", default=20, help="Number of evaluation games against each type of opponent for each test", type=int)
 
-    FLAGS = tf.flags.FLAGS
+    FLAGS = parser.parse_args()
 
     tf.app.run()
 

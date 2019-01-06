@@ -158,31 +158,35 @@ if __name__ == '__main__':
     # Parameters
     # ==================================================
 
-    # Directories
-    tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
-    tf.flags.DEFINE_string("evaluation_dir", "evaluation_dir3", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
+    parser = argparse.ArgumentParser()
 
     # Training parameters
-    tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
-    tf.flags.DEFINE_integer("max_old_agents", 100, "Maximum number of old copies of self stored")
+    parser.add_argument("--model_dir", default="saved_model", help="Where to save the trained model, checkpoints and stats", type=str)
+    parser.add_argument("--num_epochs", default=100000, help="Number of training games played", type=int)
+    parser.add_argument("--max_old_agents", default=50, help="Maximum number of old copies of QAgent stored", type=int)
 
-    # Deep Agent parameters
-    tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
-    tf.flags.DEFINE_float("epsilon_increment", 5e-5, "How much epsilon is increased after each action taken up to epsilon_max (default: 5e-6)")
-    tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremented epsilon (default: 0.85)")
-    tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.85)")
+    # Reinforcement Learning parameters
+    parser.add_argument("--epsilon", default=0, help="How likely is the agent to choose the best reward action over a random one", type=float)
+    parser.add_argument("--epsilon_increment", default=5e-5, help="How much epsilon is increased after each action taken up to epsilon_max", type=float)
+    parser.add_argument("--epsilon_max", default=0.85, help="The maximum value for the incremented epsilon", type=float)
+    parser.add_argument("--discount", default=0.85, help="How much a reward is discounted after each step", type=float)
+
+    # State parameters
+    parser.add_argument("--cards_order", default="append", choices=['value', 'replace_last_used', 'append'], help="Where a drawn card is put in the hand")
+    parser.add_argument("--cards_representation", default="hot_on_num_seed", choices=['hot_on_deck', 'hot_on_num_seed'], help="How to one-hot encode cards")
+    parser.add_argument("--history", help="Include all seen cards in the state", action="store_true")
 
     # Network parameters
-    tf.flags.DEFINE_float("learning_rate", 1e-4, "The learning rate for the network updates (default: 1e-4)")
-
+    parser.add_argument("--network", default="drqn", choices=['dqn', 'drqn'], help="Neural Network used for approximating value function")
+    parser.add_argument('--layers', default=[256, 128], help="Definition of layers for the chosen network", type=int, nargs='+')
+    parser.add_argument("--learning_rate", default=1e-4, help="Learning rate for the network updates", type=float)
+    parser.add_argument("--replace_target_iter", default=2000, help="Number of update steps before copying evaluation weights into target network", type=int)
+    parser.add_argument("--batch_size", default=100, help="Training batch size", type=int)
 
     # Evaluation parameters
-    tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
-    tf.flags.DEFINE_integer("num_evaluations", 200, "Evaluate on these many episodes for each test (default: 500)")
+    parser.add_argument("--evaluate_every", default=1000, help="Evaluate model after this many epochs", type=int)
+    parser.add_argument("--num_evaluations", default=500, help="Number of evaluation games against each type of opponent for each test", type=int)
 
-    FLAGS = tf.flags.FLAGS
+    FLAGS = parser.parse_args()
 
     tf.app.run()
-
-

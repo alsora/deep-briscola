@@ -35,10 +35,12 @@ if __name__ == '__main__':
     # Parameters
     # ==================================================
 
-    # Model directory
-    tf.flags.DEFINE_string("model_dir", "", "Provide a trained model path if you want to play against a deep agent (default: None)")
+    parser = argparse.ArgumentParser()
 
-    FLAGS = tf.flags.FLAGS
+    parser.add_argument("--model_dir", default=None, help="Provide a trained model path if you want to play against a deep agent", type=str)
+
+    FLAGS = parser.parse_args()
 
     tf.app.run()
+
 
