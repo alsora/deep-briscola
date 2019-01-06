@@ -52,7 +52,7 @@ class ReplayMemory:
 
 class DRQN(BaseNetwork):
 
-    def __init__(self, n_actions, n_features, learning_rate = 1e-3, discount = 0.85):
+    def __init__(self, n_actions, n_features, layers=[256, 128], learning_rate=1e-3, batch_size=25, replace_target_iter=2000, discount=0.85):
         # initialize base class
         super().__init__()
 
@@ -61,12 +61,12 @@ class DRQN(BaseNetwork):
         self.n_actions = n_actions
         self.learning_rate = learning_rate
         self.gamma = discount
-        self.batch_size = 25
+        self.batch_size = batch_size
         self.trace_length = 5
-        self.replace_target_iter = 500
+        self.replace_target_iter = replace_target_iter
 
         # layers parameters
-        self.lstm_layers = [256, 128]
+        self.lstm_layers = layers
 
         # init vars
         self.learn_step_counter = 0

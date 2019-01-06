@@ -40,8 +40,15 @@ def main(argv=None):
     # Initialize agents
     agents = []
     agent = QAgent(
-        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
-        FLAGS.learning_rate)
+        FLAGS.epsilon,
+        FLAGS.epsilon_increment,
+        FLAGS.epsilon_max,
+        FLAGS.discount,
+        FLAGS.network,
+        FLAGS.layers,
+        FLAGS.learning_rate,
+        FLAGS.replace_target_iter,
+        FLAGS.batch_size)
     agents.append(agent)
     agent = RandomAgent()
     agents.append(agent)
@@ -73,7 +80,10 @@ if __name__ == '__main__':
     parser.add_argument("--history", help="Include all seen cards in the state", action="store_true")
 
     # Network parameters
+    parser.add_argument("--network", default="drqn", choices=['dqn', 'drqn'], help="Neural Network used for approximating value function")
+    parser.add_argument('--layers', default=[256, 128], help="Definition of layers for the chosen network", type=int, nargs='+')
     parser.add_argument("--learning_rate", default=1e-4, help="Learning rate for the network updates", type=float)
+    parser.add_argument("--replace_target_iter", default=2000, help="Number of update steps before copying evaluation weights into target network", type=int)
     parser.add_argument("--batch_size", default=100, help="Training batch size", type=int)
 
     # Evaluation parameters

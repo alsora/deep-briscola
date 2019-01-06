@@ -12,7 +12,7 @@ from networks.drqn import DRQN
 class QAgent():
     ''' Trainable agent which uses a neural network to determine best action'''
 
-    def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max = 0.85, discount=0.95, learning_rate = 1e-3):
+    def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max=0.85, discount=0.95, network='dqn', layers=[256, 128], learning_rate=1e-3, replace_target_iter=2000, batch_size=100):
         self.name = 'QAgent'
 
         self.n_actions = 3
@@ -21,7 +21,6 @@ class QAgent():
         self.epsilon = epsilon
         self.epsilon_backup = epsilon
         self.epsilon_increment = epsilon_increment
-        self.gamma = discount
 
         self.last_state = None
         self.state = None
@@ -29,10 +28,14 @@ class QAgent():
         self.reward = None
 
         # create q learning algorithm
-        self.q_learning = DRQN(self.n_actions, self.n_features, learning_rate, discount)
+        print("NETWORK------->", network)
+        if network == "dqn":
+            self.q_learning = DQN(self.n_actions, self.n_features, layers, learning_rate, batch_size, replace_target_iter, discount)
+        elif network == "drqn":
+            self.q_learning = DRQN(self.n_actions, self.n_features, layers, learning_rate, batch_size, replace_target_iter, discount)
+        else:
+            raise ValueError("Not implemented type of network passed to QAgent")
 
-
-        self.count_wrong_moves = 0
 
 
     def observe(self, game, player, deck):
