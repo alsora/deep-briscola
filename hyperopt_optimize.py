@@ -55,8 +55,7 @@ if __name__ == "__main__":
         train_agent,
         space,
         algo=tpe.suggest,
-        max_evals=100
-    )
+        max_evals=100)
 
     print(best_model)
     print ("Best model is:")

@@ -9,6 +9,7 @@ from agents.ai_agent import AIAgent
 from evaluate import evaluate
 import environment as brisc
 from utils import BriscolaLogger
+from utils import CardsEncoding, CardsOrder, NetworkTypes, PlayerState
 
 
 
@@ -78,12 +79,12 @@ if __name__ == '__main__':
     parser.add_argument("--discount", default=0.85, help="How much a reward is discounted after each step", type=float)
 
     # State parameters
-    parser.add_argument("--cards_order", default="append", choices=['value', 'replace_last_used', 'append'], help="Where a drawn card is put in the hand")
-    parser.add_argument("--cards_representation", default="hot_on_num_seed", choices=['hot_on_deck', 'hot_on_num_seed'], help="How to one-hot encode cards")
-    parser.add_argument("--history", help="Include all seen cards in the state", action="store_true")
+    parser.add_argument("--cards_order", default=CardsOrder.APPEND, choices=[CardsOrder.APPEND, CardsOrder.REPLACE, CardsOrder.VALUE], help="Where a drawn card is put in the hand")
+    parser.add_argument("--cards_encoding", default=CardsEncoding.HOT_ON_NUM_SEED, choices=[CardsEncoding.HOT_ON_DECK, CardsEncoding.HOT_ON_NUM_SEED], help="How to encode cards")
+    parser.add_argument("--player_state", default=PlayerState.HAND_PLAYED_BRISCOLA, choices=[PlayerState.HAND_PLAYED_BRISCOLA, PlayerState.HAND_PLAYED_BRISCOLASEED, PlayerState.HAND_PLAYED_BRISCOLA_HISTORY], help="Which cards to encode in the player state")
 
     # Network parameters
-    parser.add_argument("--network", default="drqn", choices=['dqn', 'drqn'], help="Neural Network used for approximating value function")
+    parser.add_argument("--network", default=NetworkTypes.DRQN, choices=[NetworkTypes.DQN, NetworkTypes.DRQN], help="Neural Network used for approximating value function")
     parser.add_argument('--layers', default=[256, 128], help="Definition of layers for the chosen network", type=int, nargs='+')
     parser.add_argument("--learning_rate", default=1e-4, help="Learning rate for the network updates", type=float)
     parser.add_argument("--replace_target_iter", default=2000, help="Number of update steps before copying evaluation weights into target network", type=int)
