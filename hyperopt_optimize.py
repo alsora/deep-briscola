@@ -5,6 +5,7 @@ from agents.q_agent import QAgent
 from agents.random_agent import RandomAgent
 import environment as brisc
 from train import train
+from utils import BriscolaLogger
 
 
 space = {
@@ -25,7 +26,9 @@ def train_agent(hype_space):
     print("----------------------")
     print("Evaluating model: ", hype_space)
 
-    game = brisc.BriscolaGame(2,verbosity=brisc.LoggerLevels.TRAIN)
+    logger = BriscolaLogger(BriscolaLogger.LoggerLevels.TEST)
+    game = brisc.BriscolaGame(2, logger)
+
     tf.reset_default_graph()
 
     # Initialize agents

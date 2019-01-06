@@ -8,6 +8,7 @@ from agents.ai_agent import AIAgent
 from agents.q_agent import QAgent
 from graphic_visualizations import stats_plotter
 import environment as brisc
+from utils import BriscolaLogger
 
 
 def evaluate(game, agents, num_evaluations):
@@ -35,7 +36,8 @@ def evaluate(game, agents, num_evaluations):
 def main(argv=None):
     '''Evaluate agent performances against RandomAgent and AIAgent'''
 
-    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TEST)
+    logger = BriscolaLogger(BriscolaLogger.LoggerLevels.TEST)
+    game = brisc.BriscolaGame(2, logger)
 
     # Initialize agents
     agents = []

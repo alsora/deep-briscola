@@ -5,12 +5,13 @@ from agents.q_agent import QAgent
 from agents.human_agent import HumanAgent
 
 import environment as brisc
+from utils import BriscolaLogger
 
 def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2,brisc.LoggerLevels.PVP)
-    deck = game.deck
+    logger = BriscolaLogger(BriscolaLogger.LoggerLevels.PVP)
+    game = brisc.BriscolaGame(2, logger)
 
     # Initialize agents
     agents = []

@@ -8,6 +8,8 @@ from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
 from evaluate import evaluate
 import environment as brisc
+from utils import BriscolaLogger
+
 
 
 def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
@@ -35,7 +37,8 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
 def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
+    logger = BriscolaLogger(BriscolaLogger.LoggerLevels.TRAIN)
+    game = brisc.BriscolaGame(2, logger)
 
     # Initialize agents
     agents = []

@@ -1,13 +1,7 @@
-import itertools, time, random
+import random
 import numpy as np
-from enum import Enum
 
-class LoggerLevels(Enum):
-    DEBUG = 0
-    PVP = 1
-    TEST = 2
-    TRAIN = 3
-
+from utils import BriscolaLogger
 
 
 class BriscolaCard:
@@ -134,26 +128,10 @@ class BriscolaPlayer:
 
 class BriscolaGame:
 
-    def __init__(self, num_players = 2, verbosity=LoggerLevels.TEST):
+    def __init__(self, num_players=2, logger=BriscolaLogger()):
         self.num_players = num_players
         self.deck = BriscolaDeck()
-        self.configure_logger(verbosity)
-
-
-    def configure_logger(self, verbosity):
-
-        if verbosity.value > LoggerLevels.DEBUG.value:
-            self.DEBUG_logger = lambda *args: None
-        else:
-            self.DEBUG_logger = print
-
-        if verbosity.value > LoggerLevels.PVP.value:
-            self.PVP_logger = lambda *args: None
-        else:
-            self.PVP_logger = print
-
-        self.TEST_logger = print
-        self.TRAIN_logger = print
+        self.logger = logger
 
 
     def reset(self):
@@ -205,7 +183,7 @@ class BriscolaGame:
 
     def draw_step(self):
         ''' each player, in order, tries to draw a card'''
-        self.PVP_logger("----------- NEW TURN -----------")
+        self.logger.PVP("----------- NEW TURN -----------")
 
         for player_id in self.players_order:
             player = self.players[player_id]
@@ -219,14 +197,14 @@ class BriscolaGame:
 
         player = self.players[player_id]
 
-        self.DEBUG_logger("Player ", player_id, " hand: ", [card.name for card in player.hand])
-        self.DEBUG_logger("Player ", player_id, " choose action ", action)
+        self.logger.DEBUG("Player ", player_id, " hand: ", [card.name for card in player.hand])
+        self.logger.DEBUG("Player ", player_id, " choose action ", action)
 
         card = player.play_card(action)
         if card is None:
             raise ValueError("player.play_card failed!")
 
-        self.PVP_logger("Player ", player_id, " played ", card.name)
+        self.logger.PVP("Player ", player_id, " played ", card.name)
 
         self.played_cards.append(card)
         self.history.append(card)
@@ -260,7 +238,7 @@ class BriscolaGame:
 
         self.update_game(winner_player, points)
 
-        self.PVP_logger("Player ", winner_player_id, " wins ", points, " points with ", strongest_card.name)
+        self.logger.PVP("Player ", winner_player_id, " wins ", points, " points with ", strongest_card.name)
 
         return winner_player_id, points
 
@@ -297,7 +275,7 @@ class BriscolaGame:
 
         winner_player_id, winner_points = self.get_winner()
 
-        self.PVP_logger("Player ", winner_player_id, " wins with ", winner_points, " points!!")
+        self.logger.PVP("Player ", winner_player_id, " wins with ", winner_points, " points!!")
 
         return winner_player_id, winner_points
 

@@ -80,9 +80,9 @@ class DQN(BaseNetwork):
 
             # input placeholders
             self.s = tf.placeholder(tf.float32, [None, self.n_features], name='states')  # input State
-            self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
-            self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
             self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
+            self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
+            self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
 
             w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 

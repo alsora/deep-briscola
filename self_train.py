@@ -15,6 +15,8 @@ from evaluate import evaluate
 from agents.random_agent import RandomAgent
 from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
+from utils import BriscolaLogger
+
 
 
 class CopyAgent(QAgent):
@@ -130,7 +132,8 @@ def main(argv=None):
     std_hist_against_Random = []
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
+    logger = BriscolaLogger(BriscolaLogger.LoggerLevels.TRAIN)
+    game = brisc.BriscolaGame(2, logger)
 
     # Initialize agent
     agent = QAgent(

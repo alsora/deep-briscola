@@ -28,7 +28,6 @@ class QAgent():
         self.reward = None
 
         # create q learning algorithm
-        print("NETWORK------->", network)
         if network == "dqn":
             self.q_learning = DQN(self.n_actions, self.n_features, layers, learning_rate, batch_size, replace_target_iter, discount)
         elif network == "drqn":
