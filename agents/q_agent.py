@@ -7,12 +7,12 @@ import itertools, time, random, os, shutil
 
 from networks.dqn import DQN
 from networks.drqn import DRQN
-
+from utils import NetworkTypes
 
 class QAgent():
     ''' Trainable agent which uses a neural network to determine best action'''
 
-    def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max=0.85, discount=0.95, network='dqn', layers=[256, 128], learning_rate=1e-3, replace_target_iter=2000, batch_size=100):
+    def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max=0.85, discount=0.95, network=NetworkTypes.DQN, layers=[256, 128], learning_rate=1e-3, replace_target_iter=2000, batch_size=100):
         self.name = 'QAgent'
 
         self.n_actions = 3
@@ -28,9 +28,9 @@ class QAgent():
         self.reward = None
 
         # create q learning algorithm
-        if network == "dqn":
+        if network == NetworkTypes.DQN:
             self.q_learning = DQN(self.n_actions, self.n_features, layers, learning_rate, batch_size, replace_target_iter, discount)
-        elif network == "drqn":
+        elif network == NetworkTypes.DRQN:
             self.q_learning = DRQN(self.n_actions, self.n_features, layers, learning_rate, batch_size, replace_target_iter, discount)
         else:
             raise ValueError("Not implemented type of network passed to QAgent")
