@@ -38,6 +38,7 @@ class BaseNetwork:
 
     def load_model(self, saved_model_dir):
         '''Initialize a new tensorflow graph and session loading network and weights from a saved model'''
+        saved_model_dir = saved_model_dir.rstrip('/')
         self.graph = tf.Graph()
         with self.graph.as_default():
             tf.train.import_meta_graph('./' + saved_model_dir + '/.meta')
