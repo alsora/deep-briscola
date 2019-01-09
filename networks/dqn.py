@@ -1,7 +1,11 @@
+import sys, os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import numpy as np
 import tensorflow as tf
-import random, os, shutil
+import random
 
+from networks.base_network import BaseNetwork
 
 class ReplayMemory:
 
@@ -40,9 +44,11 @@ class ReplayMemory:
         return min(self.capacity, self.memory_counter)
 
 
-class DQN:
+class DQN(BaseNetwork):
 
     def __init__(self, n_actions, n_features, learning_rate = 1e-3, discount = 0.85):
+        # initialize base class
+        super().__init__()
 
         # network parameters
         self.n_features = n_features
@@ -68,7 +74,6 @@ class DQN:
 
     def create_network(self):
 
-        self.graph = tf.Graph()
         with self.graph.as_default():
 
             # input placeholders
@@ -176,35 +181,4 @@ class DQN:
 
         self.learn_step_counter += 1
 
-
-    def initialize_session(self):
-        '''Defines self.sess and initialize the variables'''
-        session_conf = tf.ConfigProto(
-            allow_soft_placement = True,
-            log_device_placement = False)
-
-        self.session = tf.Session(config = session_conf, graph=self.graph)
-
-        with self.graph.as_default():
-            self.init = tf.global_variables_initializer()
-            self.saver = tf.train.Saver()
-
-        self.session.run(self.init)
-
-
-    def save_model(self, output_dir):
-        '''Save the network graph and weights to disk'''
-        if not output_dir:
-            raise ValueError('You have to specify a valid output directory for DeepAgent.save_model')
-
-        if not os.path.exists(output_dir):
-            # if provided output_dir does not already exists, create it
-            os.mkdir(output_dir)
-
-        self.saver.save(self.session, "./" + output_dir + '/')
-
-
-    def load_model(self, saved_model_dir):
-        '''Initialize a new tensorflow session loading network and weights from a saved model'''
-        self.saver.restore(self.session, "./" + saved_model_dir + '/')
 
