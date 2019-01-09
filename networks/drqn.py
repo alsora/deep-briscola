@@ -70,7 +70,7 @@ class DRQN(BaseNetwork):
 
         # init vars
         self.learn_step_counter = 0
-        self.wrong_move = False
+        self.epoch_history = []
         self.session = None
 
         # create replay memroy
@@ -88,9 +88,9 @@ class DRQN(BaseNetwork):
         with self.graph.as_default():
             # input placeholders
             self.s = tf.placeholder(tf.float32, [None, self.n_features], name='states')  # input State
-            self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
-            self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
             self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
+            self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
+            self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
             self.events_length = tf.placeholder(tf.int32, None, name='events_length')
             w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
@@ -166,17 +166,25 @@ class DRQN(BaseNetwork):
 
 
     def get_q_table(self, state):
-            ''' Compute q table for current state'''
+        ''' Compute q table for current state'''
 
-            states_op = self.session.graph.get_operation_by_name(f"states").outputs[0]
-            events_op = self.session.graph.get_operation_by_name(f"events_length").outputs[0]
-            #argmax_op = self.session.graph.get_operation_by_name("predictions/argmax").outputs[0]
-            q_op = self.session.graph.get_operation_by_name(f"eval_net/q/BiasAdd").outputs[0]
+        # HACK for check end episode
+        if len(self.epoch_history) == 20:
+            self.epoch_history = []
 
-            input_state = np.expand_dims(state, axis=0)
-            q = self.session.run([q_op], feed_dict={states_op: input_state, events_op : 1})
+        self.epoch_history.append(state)
 
-            return q[0][0]
+        states_op = self.session.graph.get_operation_by_name(f"states").outputs[0]
+        events_op = self.session.graph.get_operation_by_name(f"events_length").outputs[0]
+        q_op = self.session.graph.get_operation_by_name(f"eval_net/q/BiasAdd").outputs[0]
+
+        #input_state = np.expand_dims(state, axis=0)
+        input_state = self.epoch_history[-self.trace_length:]
+
+        # q has shape 1 x len(input_state) x len(actions)
+        q = self.session.run([q_op], feed_dict={states_op: input_state, events_op : len(input_state)})
+
+        return q[0][-1]
 
 
     def learn(self, last_state, action, reward, state):

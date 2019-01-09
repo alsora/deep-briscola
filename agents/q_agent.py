@@ -45,7 +45,7 @@ class QAgent():
         '''
 
         # Reordering the player hand in descending order (high value -> low value)
-        game.reorder_hand(player.id)
+        #game.reorder_hand(player.id)
 
         state = np.zeros(self.n_features)
         # add hand to state
