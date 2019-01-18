@@ -12,7 +12,7 @@ from utils import NetworkTypes
 class QAgent():
     ''' Trainable agent which uses a neural network to determine best action'''
 
-    def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max=0.85, discount=0.95, network=NetworkTypes.DQN, layers=[256, 128], learning_rate=1e-3, replace_target_iter=2000, batch_size=100):
+    def __init__(self, epsilon=0.85, epsilon_increment=0, epsilon_max=0.85, discount=0.95, network=NetworkTypes.DRQN, layers=[256, 128], learning_rate=1e-3, replace_target_iter=2000, batch_size=100):
         self.name = 'QAgent'
 
         self.n_actions = 3
