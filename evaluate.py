@@ -9,6 +9,7 @@ from agents.q_agent import QAgent
 from graphic_visualizations import stats_plotter
 import environment as brisc
 from utils import BriscolaLogger
+from utils import NetworkTypes
 
 
 def evaluate(game, agents, num_evaluations):
