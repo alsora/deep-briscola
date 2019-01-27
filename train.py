@@ -1,4 +1,5 @@
 import os
+import argparse
 import tensorflow as tf
 import environment as brisc
 
@@ -7,6 +8,9 @@ from agents.q_agent import QAgent
 from agents.ai_agent import AIAgent
 from evaluate import evaluate
 import environment as brisc
+from utils import BriscolaLogger
+from utils import CardsEncoding, CardsOrder, NetworkTypes, PlayerState
+
 
 
 def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir = ""):
@@ -34,13 +38,21 @@ def train(game, agents, num_epochs, evaluate_every, num_evaluations, model_dir =
 def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2, verbosity=brisc.LoggerLevels.TRAIN)
+    logger = BriscolaLogger(BriscolaLogger.LoggerLevels.TRAIN)
+    game = brisc.BriscolaGame(2, logger)
 
     # Initialize agents
     agents = []
     agent = QAgent(
-        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
-        FLAGS.learning_rate)
+        FLAGS.epsilon,
+        FLAGS.epsilon_increment,
+        FLAGS.epsilon_max,
+        FLAGS.discount,
+        FLAGS.network,
+        FLAGS.layers,
+        FLAGS.learning_rate,
+        FLAGS.replace_target_iter,
+        FLAGS.batch_size)
     agents.append(agent)
     agent = RandomAgent()
     agents.append(agent)
@@ -54,27 +66,34 @@ if __name__ == '__main__':
     # Parameters
     # ==================================================
 
-    # Model directory
-    tf.flags.DEFINE_string("model_dir", "saved_model", "Where to save the trained model, checkpoints and stats (default: pwd/saved_model)")
+    parser = argparse.ArgumentParser()
 
     # Training parameters
-    tf.flags.DEFINE_integer("batch_size", 100, "Batch Size")
-    tf.flags.DEFINE_integer("num_epochs", 100000, "Number of training epochs")
-
-    # Deep Agent parameters
-    tf.flags.DEFINE_float("epsilon", 0, "How likely is the agent to choose the best reward action over a random one (default: 0)")
-    tf.flags.DEFINE_float("epsilon_increment", 5e-5, "How much epsilon is increased after each action taken up to epsilon_max (default: 5e-6)")
-    tf.flags.DEFINE_float("epsilon_max", 0.85, "The maximum value for the incremented epsilon (default: 0.85)")
-    tf.flags.DEFINE_float("discount", 0.85, "How much a reward is discounted after each step (default: 0.85)")
-
-    # Network parameters
-    tf.flags.DEFINE_float("learning_rate", 1e-4, "The learning rate for the network updates (default: 1e-4)")
-
+    parser.add_argument("--model_dir", default="saved_model", help="Where to save the trained model, checkpoints and stats", type=str)
+    parser.add_argument("--num_epochs", default=100000, help="Number of training games played", type=int)
 
     # Evaluation parameters
-    tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model after this many steps (default: 1000)")
-    tf.flags.DEFINE_integer("num_evaluations", 500, "Evaluate on these many episodes for each test (default: 500)")
+    parser.add_argument("--evaluate_every", default=1000, help="Evaluate model after this many epochs", type=int)
+    parser.add_argument("--num_evaluations", default=500, help="Number of evaluation games against each type of opponent for each test", type=int)
 
-    FLAGS = tf.flags.FLAGS
+    # State parameters
+    parser.add_argument("--cards_order", default=CardsOrder.APPEND, choices=[CardsOrder.APPEND, CardsOrder.REPLACE, CardsOrder.VALUE], help="Where a drawn card is put in the hand")
+    parser.add_argument("--cards_encoding", default=CardsEncoding.HOT_ON_NUM_SEED, choices=[CardsEncoding.HOT_ON_DECK, CardsEncoding.HOT_ON_NUM_SEED], help="How to encode cards")
+    parser.add_argument("--player_state", default=PlayerState.HAND_PLAYED_BRISCOLA, choices=[PlayerState.HAND_PLAYED_BRISCOLA, PlayerState.HAND_PLAYED_BRISCOLASEED, PlayerState.HAND_PLAYED_BRISCOLA_HISTORY], help="Which cards to encode in the player state")
+
+    # Reinforcement Learning parameters
+    parser.add_argument("--epsilon", default=0, help="How likely is the agent to choose the best reward action over a random one", type=float)
+    parser.add_argument("--epsilon_increment", default=5e-5, help="How much epsilon is increased after each action taken up to epsilon_max", type=float)
+    parser.add_argument("--epsilon_max", default=0.85, help="The maximum value for the incremented epsilon", type=float)
+    parser.add_argument("--discount", default=0.85, help="How much a reward is discounted after each step", type=float)
+
+    # Network parameters
+    parser.add_argument("--network", default=NetworkTypes.DRQN, choices=[NetworkTypes.DQN, NetworkTypes.DRQN], help="Neural Network used for approximating value function")
+    parser.add_argument('--layers', default=[256, 128], help="Definition of layers for the chosen network", type=int, nargs='+')
+    parser.add_argument("--learning_rate", default=1e-4, help="Learning rate for the network updates", type=float)
+    parser.add_argument("--replace_target_iter", default=2000, help="Number of update steps before copying evaluation weights into target network", type=int)
+    parser.add_argument("--batch_size", default=100, help="Training batch size", type=int)
+
+    FLAGS = parser.parse_args()
 
     tf.app.run()

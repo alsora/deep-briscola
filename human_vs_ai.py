@@ -1,16 +1,18 @@
 import tensorflow as tf
+import argparse
 
 from agents.ai_agent import AIAgent
 from agents.q_agent import QAgent
 from agents.human_agent import HumanAgent
 
 import environment as brisc
+from utils import BriscolaLogger
 
 def main(argv=None):
 
     # Initializing the environment
-    game = brisc.BriscolaGame(2,brisc.LoggerLevels.PVP)
-    deck = game.deck
+    logger = BriscolaLogger(BriscolaLogger.LoggerLevels.PVP)
+    game = brisc.BriscolaGame(2, logger)
 
     # Initialize agents
     agents = []
@@ -34,10 +36,13 @@ if __name__ == '__main__':
     # Parameters
     # ==================================================
 
-    # Model directory
-    tf.flags.DEFINE_string("model_dir", "", "Provide a trained model path if you want to play against a deep agent (default: None)")
+    parser = argparse.ArgumentParser()
 
-    FLAGS = tf.flags.FLAGS
+    parser.add_argument("--model_dir", default=None, help="Provide a trained model path if you want to play against a deep agent", type=str)
+    parser.add_argument("--network", default=NetworkTypes.DRQN, choices=[NetworkTypes.DQN, NetworkTypes.DRQN], help="Neural Network used for approximating value function")
+
+    FLAGS = parser.parse_args()
 
     tf.app.run()
+
 
