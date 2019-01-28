@@ -91,7 +91,7 @@ class DRQN(BaseNetwork):
             self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
             self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
             self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
-            self.events_length = tf.placeholder(dtype=tf.int32)
+            self.events_length = tf.placeholder(tf.int32, None, name='events_length')
             w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
             # evaluation network
@@ -99,7 +99,6 @@ class DRQN(BaseNetwork):
 
                 e1 = tf.layers.dense(self.s, 128, tf.nn.relu, kernel_initializer=w_initializer,
                             bias_initializer=b_initializer, name= 'e1')
-
 
                 rnn_s = tf.reshape(tf.contrib.slim.flatten(e1),[-1,self.events_length, 128])
                 rnn_multi_cells_e = tf.contrib.rnn.MultiRNNCell([tf.nn.rnn_cell.LSTMCell(layer_size) for layer_size in self.lstm_layers])
@@ -170,11 +169,12 @@ class DRQN(BaseNetwork):
             ''' Compute q table for current state'''
 
             states_op = self.session.graph.get_operation_by_name(f"states").outputs[0]
+            events_op = self.session.graph.get_operation_by_name(f"events_length").outputs[0]
             #argmax_op = self.session.graph.get_operation_by_name("predictions/argmax").outputs[0]
             q_op = self.session.graph.get_operation_by_name(f"eval_net/q/BiasAdd").outputs[0]
 
             input_state = np.expand_dims(state, axis=0)
-            q = self.session.run([q_op], feed_dict={states_op: input_state, self.events_length : 1})
+            q = self.session.run([q_op], feed_dict={states_op: input_state, events_op : 1})
 
             return q[0][0]
 

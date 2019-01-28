@@ -42,7 +42,7 @@ def main(argv=None):
 
     # agent to be evaluated is RandomAgent or QAgent if a model is provided
     if FLAGS.model_dir:
-        eval_agent = QAgent()
+        eval_agent = QAgent(network=FLAGS.network)
         eval_agent.load_model(FLAGS.model_dir)
         eval_agent.make_greedy()
     else:
