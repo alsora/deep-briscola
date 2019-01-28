@@ -137,8 +137,15 @@ def main(argv=None):
 
     # Initialize agent
     agent = QAgent(
-        FLAGS.epsilon, FLAGS.epsilon_increment, FLAGS.epsilon_max, FLAGS.discount,
-        FLAGS.learning_rate)
+        FLAGS.epsilon,
+        FLAGS.epsilon_increment,
+        FLAGS.epsilon_max,
+        FLAGS.discount,
+        FLAGS.network,
+        FLAGS.layers,
+        FLAGS.learning_rate,
+        FLAGS.replace_target_iter,
+        FLAGS.batch_size)
 
     # Training
     best_total_wins = self_train(game, agent,
@@ -168,6 +175,7 @@ if __name__ == '__main__':
     # Evaluation parameters
     parser.add_argument("--evaluate_every", default=1000, help="Evaluate model after this many epochs", type=int)
     parser.add_argument("--num_evaluations", default=500, help="Number of evaluation games against each type of opponent for each test", type=int)
+    parser.add_argument("--evaluation_dir", default="evaluation_dir", help="Directory where plots are stored", type=str)
 
     # State parameters
     parser.add_argument("--cards_order", default=CardsOrder.APPEND, choices=[CardsOrder.APPEND, CardsOrder.REPLACE, CardsOrder.VALUE], help="Where a drawn card is put in the hand")
