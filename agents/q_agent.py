@@ -26,6 +26,7 @@ class QAgent():
         self.action = None
         self.reward = None
         self.state = None
+        self.terminal = None
 
         # create q learning algorithm
         if network == NetworkTypes.DQN:
@@ -73,6 +74,7 @@ class QAgent():
 
         self.last_state = self.state
         self.state = state
+        self.terminal = int(game.check_end_game())
 
 
     def select_action(self, available_actions):
@@ -125,7 +127,7 @@ class QAgent():
                 self.epsilon = self.epsilon_max
                 print("Epsilon max: ", self.epsilon_max, " reached!")
 
-        self.q_learning.learn(self.last_state, self.action, self.reward, self.state)
+        self.q_learning.learn(self.last_state, self.action, self.reward, self.state, self.terminal)
 
 
     def save_model(self, output_dir):
