@@ -185,6 +185,8 @@ class BriscolaGame:
         ''' each player, in order, tries to draw a card'''
         self.logger.PVP("----------- NEW TURN -----------")
 
+        self.played_cards = []
+
         for player_id in self.players_order:
             player = self.players[player_id]
 
@@ -285,7 +287,6 @@ class BriscolaGame:
         winner_player_id = winner_player.id
         winner_player.points += points
 
-        self.played_cards = []
         self.turn_player = winner_player_id
         self.players_order = self.get_players_order()
 
