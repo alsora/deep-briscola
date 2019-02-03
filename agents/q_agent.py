@@ -23,9 +23,9 @@ class QAgent():
         self.epsilon_increment = epsilon_increment
 
         self.last_state = None
-        self.state = None
         self.action = None
         self.reward = None
+        self.state = None
 
         # create q learning algorithm
         if network == NetworkTypes.DQN:
@@ -36,8 +36,7 @@ class QAgent():
             raise ValueError("Not implemented type of network passed to QAgent")
 
 
-
-    def observe(self, game, player, deck):
+    def observe(self, game, player):
         ''' create an encoded state representation of the game to be fed into the neural network
             the state is composed of 5 cards (3 in hand, 1 played card on table, 1 briscola)
             each card is array of size 14, separating one hot encoded number and seed i.e. [number_one_hot, seed_one_hot]
@@ -49,6 +48,7 @@ class QAgent():
 
         state = np.zeros(self.n_features)
         # add hand to state
+
         for i, card in enumerate(player.hand):
             number_index = i * 14 + card.number
             state[number_index] = 1
@@ -114,10 +114,16 @@ class QAgent():
         else:
             self.reward = reward
         '''
+
         # update last reward
         self.reward = reward
+
         # update epsilon grediness
-        self.epsilon = self.epsilon + self.epsilon_increment if self.epsilon < self.epsilon_max else self.epsilon_max
+        if self.epsilon < self.epsilon_max:
+            self.epsilon += self.epsilon_increment
+            if self.epsilon >= self.epsilon_max:
+                self.epsilon = self.epsilon_max
+                print("Epsilon max: ", self.epsilon_max, " reached!")
 
         self.q_learning.learn(self.last_state, self.action, self.reward, self.state)
 

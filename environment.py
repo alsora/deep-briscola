@@ -351,7 +351,7 @@ def play_episode(game, agents, train=True):
             player = game.players[player_id]
             agent = agents[player_id]
             # agent observes state before acting
-            agent.observe(game, player, game.deck)
+            agent.observe(game, player)
             available_actions = game.get_player_actions(player_id)
             action = agent.select_action(available_actions)
 
@@ -364,7 +364,7 @@ def play_episode(game, agents, train=True):
                 player = game.players[player_id]
                 agent = agents[player_id]
                 # agent observes new state after acting
-                agent.observe(game, player, game.deck)
+                agent.observe(game, player)
 
                 reward = rewards[i]
                 agent.update(reward)

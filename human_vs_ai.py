@@ -7,6 +7,7 @@ from agents.human_agent import HumanAgent
 
 import environment as brisc
 from utils import BriscolaLogger
+from utils import NetworkTypes
 
 def main(argv=None):
 
@@ -27,7 +28,7 @@ def main(argv=None):
         agent = AIAgent()
         agents.append(agent)
 
-    brisc.play_episode(game, agents)
+    brisc.play_episode(game, agents, train=False)
 
 
 

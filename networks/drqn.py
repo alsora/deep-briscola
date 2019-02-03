@@ -11,9 +11,11 @@ class ReplayMemory:
 
     def __init__(self, capacity, n_features):
 
+        # initialize zero memory, each sample in memory has size [s + a + r + s_ + t]
+        # where s and s_ are 1xn_features, a r t are scalar
+
         self.capacity = capacity
         self.event_size = n_features * 2 + 2
-        # initialize zero memory, each sample in memory has size [s + a + r + s_]
         self.memory = np.zeros((self.capacity, 20, self.event_size))
         self.memory_counter = 0
 
@@ -22,7 +24,7 @@ class ReplayMemory:
         index = self.memory_counter % self.capacity
         self.memory[index, :] = episode
 
-        # increment memory_counter avoiding overflow
+        # increment memory_counter avoiding overflow (I only need to keep track if memory is full or not)
         self.memory_counter += 1
         if self.memory_counter == (self.capacity * 2):
             self.memory_counter = self.capacity
@@ -65,6 +67,11 @@ class DRQN(BaseNetwork):
         self.trace_length = 5
         self.replace_target_iter = replace_target_iter
 
+        # update parameters
+        self.learn_iter = 0
+        self.update_each = 8
+        self.update_after = 5000
+
         # layers parameters
         self.lstm_layers = layers
 
@@ -105,8 +112,7 @@ class DRQN(BaseNetwork):
 
                 rnn_output_e, _ = tf.nn.dynamic_rnn(
                     rnn_multi_cells_e, rnn_s, dtype=tf.float32)
-                rnn_output_e = tf.reshape(rnn_output_e,shape=[-1, self.lstm_layers[-1]])
-
+                rnn_output_e = rnn_output_e[:, -1, :]
 
                 e2 = tf.layers.dense(rnn_output_e, 32, kernel_initializer=w_initializer,
                                         bias_initializer=b_initializer, name='e2')
@@ -126,9 +132,7 @@ class DRQN(BaseNetwork):
 
                 rnn_output_t, _ = tf.nn.dynamic_rnn(
                     multi_cells_t, rnn_s_, dtype=tf.float32)
-                rnn_output_t = tf.reshape(rnn_output_t,shape=[-1, self.lstm_layers[-1]])
-
-
+                rnn_output_t = rnn_output_t[:, -1, :]
 
                 t2 = tf.layers.dense(rnn_output_t, 32, kernel_initializer=w_initializer,
                                         bias_initializer=b_initializer, name='t2')
@@ -141,12 +145,16 @@ class DRQN(BaseNetwork):
                 self.argmax_action = tf.argmax(self.q, 1, output_type=tf.int32, name='argmax')
             with tf.variable_scope('q_target'):
                 # discounted reward on the target network
-                q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
+                rewards_history = tf.reshape(self.r, [-1,self.events_length])
+                current_rewards = rewards_history[:, -1]
+                q_target = current_rewards + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
                 # stop gradient to avoid updating target network
                 self.q_target = tf.stop_gradient(q_target)
             with tf.variable_scope('q_wrt_a'):
                 # q value of chosen action
-                a_indices = tf.stack([tf.range(tf.shape(self.a)[0], dtype=tf.int32), self.a], axis=1)
+                actions_history = tf.reshape(self.a, [-1,self.events_length])
+                current_actions = actions_history[:, -1]
+                a_indices = tf.stack([tf.range(tf.shape(current_actions)[0], dtype=tf.int32), current_actions], axis=1)
                 self.q_wrt_a = tf.gather_nd(params=self.q, indices=a_indices)
             with tf.variable_scope('loss'):
                 # loss computed as difference between predicted q[a] and (current_reward + discount * q_target[best_future_action])
@@ -186,20 +194,32 @@ class DRQN(BaseNetwork):
 
         return q[0][-1]
 
+    def store(self, last_state, action, reward, state):
+        ''' Store the current experience in memory '''
 
-    def learn(self, last_state, action, reward, state):
-
-        state_vector = np.hstack((last_state, [action, reward], state))
+        state_vector = np.hstack((last_state, action, reward, state))
         self.last_episode.append(state_vector)
 
+        # if terminal state reached, I can store the full episode in memory
         # HACK for check end episode
         if len(self.last_episode) == 20:
             self.replay_memory.push(self.last_episode)
             self.last_episode = []
 
+    def learn(self, last_state, action, reward, state):
+        ''' Sample from memory and train neural network on a batch of experiences '''
+
+        self.store(last_state, action, reward, state)
+
+        # check if it's time to update the network
+        self.learn_iter += 1
+        if self.learn_iter % self.update_each != 0 or self.learn_iter < self.update_after:
+            return
+
         if self.replay_memory.size() < self.batch_size:
             # there are not enough samples for a training step in the replay memory
             return
+
         # get a batch of samples from replay memory
         batch_memory = self.replay_memory.sample(self.batch_size, self.trace_length)
 

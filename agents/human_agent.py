@@ -6,7 +6,7 @@ class HumanAgent:
     def __init__(self):
         self.name = 'HumanAgent'
 
-    def observe(self, game, player, deck):
+    def observe(self, game, player):
         self.hand = player.hand
         self.briscola = game.briscola
         self.played_cards = game.played_cards
@@ -34,4 +34,10 @@ class HumanAgent:
 
 
     def update(self, reward):
+        pass
+
+    def make_greedy(self):
+        pass
+
+    def restore_epsilon(self):
         pass

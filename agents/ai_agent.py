@@ -10,7 +10,7 @@ class AIAgent:
         self.name = 'AIAgent'
 
 
-    def observe(self, game, player, deck):
+    def observe(self, game, player):
         ''' store information about the state of the game to be used in the decisional process'''
         self.hand = player.hand
         self.points = player.points
