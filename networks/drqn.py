@@ -77,11 +77,15 @@ class DRQN(BaseNetwork):
 
         # init vars
         self.learn_step_counter = 0
-        self.epoch_history = []
         self.session = None
 
+        # TODO: use only 1 variable
+        # store the sequence of states in an episode
+        self.states_history = []
+        # store the sequence of training samples (s, a, r, s_) in an episode
+        self.samples_history = []
+        
         # create replay memroy
-        self.last_episode = []
         capacity = 2500
         self.replay_memory = ReplayMemory(capacity, n_features)
 
@@ -177,17 +181,17 @@ class DRQN(BaseNetwork):
         ''' Compute q table for current state'''
 
         # HACK for check end episode
-        if len(self.epoch_history) == 20:
-            self.epoch_history = []
+        if len(self.states_history) == 20:
+            self.states_history = []
 
-        self.epoch_history.append(state)
+        self.states_history.append(state)
 
         states_op = self.session.graph.get_operation_by_name(f"states").outputs[0]
         events_op = self.session.graph.get_operation_by_name(f"events_length").outputs[0]
         q_op = self.session.graph.get_operation_by_name(f"eval_net/q/BiasAdd").outputs[0]
 
         #input_state = np.expand_dims(state, axis=0)
-        input_state = self.epoch_history[-self.trace_length:]
+        input_state = self.states_history[-self.trace_length:]
 
         # q has shape 1 x len(input_state) x len(actions)
         q = self.session.run([q_op], feed_dict={states_op: input_state, events_op : len(input_state)})
@@ -198,13 +202,13 @@ class DRQN(BaseNetwork):
         ''' Store the current experience in memory '''
 
         state_vector = np.hstack((last_state, action, reward, state))
-        self.last_episode.append(state_vector)
+        self.samples_history.append(state_vector)
 
         # if terminal state reached, I can store the full episode in memory
         # HACK for check end episode
-        if len(self.last_episode) == 20:
-            self.replay_memory.push(self.last_episode)
-            self.last_episode = []
+        if len(self.samples_history) == 20:
+            self.replay_memory.push(self.samples_history)
+            self.samples_history = []
 
     def learn(self, last_state, action, reward, state):
         ''' Sample from memory and train neural network on a batch of experiences '''
