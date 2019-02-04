@@ -20,7 +20,7 @@ def main(argv=None):
     agents.append(HumanAgent())
 
     if FLAGS.model_dir:
-        agent = QAgent()
+        agent = QAgent(network=FLAGS.network)
         agent.load_model(FLAGS.model_dir)
         agent.make_greedy()
         agents.append(agent)
