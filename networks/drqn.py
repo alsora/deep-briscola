@@ -78,7 +78,7 @@ class DRQN(BaseNetwork):
 
         # init vars
         self.learn_step_counter = 0
-        self.session = None
+        self.epoch_history = []
 
         # TODO: use only 1 variable
         # store the sequence of states in an episode
@@ -91,6 +91,7 @@ class DRQN(BaseNetwork):
         self.replay_memory = ReplayMemory(capacity, n_features)
 
         # create network
+        self.session = None
         self.create_network()
         self.initialize_session()
 

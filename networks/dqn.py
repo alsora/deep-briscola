@@ -69,14 +69,13 @@ class DQN(BaseNetwork):
 
         # init vars
         self.learn_step_counter = 0
-        self.wrong_move = False
-        self.session = None
 
         # create replay memroy
         capacity = 10000
         self.replay_memory = ReplayMemory(capacity, self.n_features)
 
         # create network
+        self.session = None
         self.create_network()
         self.initialize_session()
 
@@ -194,7 +193,7 @@ class DQN(BaseNetwork):
         # check if it's time to copy the target network into the evaluation network
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.session.run(self.target_replace_op)
-            print("Loss: ", loss)
+            #print("Loss: ", loss)
 
         self.learn_step_counter += 1
 
