@@ -83,7 +83,7 @@ if __name__ == '__main__':
 
     # Reinforcement Learning parameters
     parser.add_argument("--epsilon", default=0, help="How likely is the agent to choose the best reward action over a random one", type=float)
-    parser.add_argument("--epsilon_increment", default=5e-5, help="How much epsilon is increased after each action taken up to epsilon_max", type=float)
+    parser.add_argument("--epsilon_increment", default=1e-5, help="How much epsilon is increased after each action taken up to epsilon_max", type=float)
     parser.add_argument("--epsilon_max", default=0.85, help="The maximum value for the incremented epsilon", type=float)
     parser.add_argument("--discount", default=0.85, help="How much a reward is discounted after each step", type=float)
 

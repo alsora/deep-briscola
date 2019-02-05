@@ -18,7 +18,7 @@ class ReplayMemory:
 
     def push(self, s, a, r, s_):
         # stacks together all states element
-        event = np.hstack((s, [a, r], s_))
+        event = np.hstack((s, a, r, s_))
         # get the index where to insert the event
         index = self.memory_counter % self.capacity
         self.memory[index, :] = event
@@ -135,19 +135,20 @@ class DQN(BaseNetwork):
 
 
     def get_q_table(self, state):
-            ''' Compute q table for current state'''
+        ''' Compute q table for current state'''
 
-            states_op = self.session.graph.get_operation_by_name("states").outputs[0]
-            #argmax_op = self.session.graph.get_operation_by_name("predictions/argmax").outputs[0]
-            q_op = self.session.graph.get_operation_by_name("eval_net/q/BiasAdd").outputs[0]
+        states_op = self.session.graph.get_operation_by_name("states").outputs[0]
+        #argmax_op = self.session.graph.get_operation_by_name("predictions/argmax").outputs[0]
+        q_op = self.session.graph.get_operation_by_name("eval_net/q/BiasAdd").outputs[0]
 
-            input_state = np.expand_dims(state, axis=0)
-            q = self.session.run([q_op], feed_dict={states_op: input_state})
+        input_state = np.expand_dims(state, axis=0)
+        q = self.session.run([q_op], feed_dict={states_op: input_state})
 
-            return q[0][0]
+        return q[0][0]
 
 
     def learn(self, last_state, action, reward, state):
+        ''' Sample from memory and train neural network on a batch of experiences '''
 
         # I have a full event [s, a, r, s_], push it into replay memory
         self.replay_memory.push(last_state, action, reward, state)
