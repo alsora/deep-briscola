@@ -71,7 +71,7 @@ class DRQN(BaseNetwork):
         # update parameters
         self.learn_step_counter = 0
         self.update_each = 8
-        self.update_after = 5000
+        self.update_after = 0
 
         # layers parameters
         self.lstm_layers = layers
@@ -207,7 +207,6 @@ class DRQN(BaseNetwork):
 
         # if terminal state reached, I can store the full episode in memory
         if terminal:
-            print("push")
             self.replay_memory.push(self.samples_history)
             self.samples_history = []
 
@@ -223,7 +222,6 @@ class DRQN(BaseNetwork):
         if self.replay_memory.size() < self.batch_size:
             # there are not enough samples for a training step in the replay memory
             return
-        print("update")
 
         # get a batch of samples from replay memory
         batch_memory = self.replay_memory.sample(self.batch_size, self.trace_length)
