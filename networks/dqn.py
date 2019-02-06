@@ -60,15 +60,12 @@ class DQN(BaseNetwork):
         self.replace_target_iter = replace_target_iter
 
         # update parameters
-        self.learn_iter = 0
+        self.learn_step_counter = 0
         self.update_each = 1
         self.update_after = 5000
 
         # layers parameters
         self.layers = layers
-
-        # init vars
-        self.learn_step_counter = 0
 
         # create replay memroy
         capacity = 10000
@@ -168,8 +165,8 @@ class DQN(BaseNetwork):
         self.store(last_state, action, reward, state, terminal)
 
         # check if it's time to update the network
-        self.learn_iter += 1
-        if self.learn_iter % self.update_each != 0 or self.learn_iter < self.update_after:
+        self.learn_step_counter += 1
+        if self.learn_step_counter % self.update_each != 0 or self.learn_step_counter < self.update_after:
             return
 
         if self.replay_memory.size() < self.batch_size:
@@ -194,7 +191,5 @@ class DQN(BaseNetwork):
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.session.run(self.target_replace_op)
             #print("Loss: ", loss)
-
-        self.learn_step_counter += 1
 
 

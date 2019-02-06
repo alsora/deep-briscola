@@ -69,16 +69,12 @@ class DRQN(BaseNetwork):
         self.replace_target_iter = replace_target_iter
 
         # update parameters
-        self.learn_iter = 0
+        self.learn_step_counter = 0
         self.update_each = 8
         self.update_after = 5000
 
         # layers parameters
         self.lstm_layers = layers
-
-        # init vars
-        self.learn_step_counter = 0
-        self.epoch_history = []
 
         # TODO: use only 1 variable
         # store the sequence of states in an episode
@@ -207,12 +203,13 @@ class DRQN(BaseNetwork):
         ''' Store the current experience in memory '''
 
         state_vector = np.hstack((last_state, action, reward, state, terminal))
-        self.last_episode.append(state_vector)
+        self.samples_history.append(state_vector)
 
         # if terminal state reached, I can store the full episode in memory
         if terminal:
-            self.replay_memory.push(self.last_episode)
-            self.last_episode = []
+            print("push")
+            self.replay_memory.push(self.samples_history)
+            self.samples_history = []
 
     def learn(self, last_state, action, reward, state, terminal):
         ''' Sample from memory and train neural network on a batch of experiences '''
@@ -220,13 +217,13 @@ class DRQN(BaseNetwork):
         self.store(last_state, action, reward, state, terminal)
 
         # check if it's time to update the network
-        self.learn_iter += 1
-        if self.learn_iter % self.update_each != 0 or self.learn_iter < self.update_after:
+        self.learn_step_counter += 1
+        if self.learn_step_counter % self.update_each != 0 or self.learn_step_counter < self.update_after:
             return
-
         if self.replay_memory.size() < self.batch_size:
             # there are not enough samples for a training step in the replay memory
             return
+        print("update")
 
         # get a batch of samples from replay memory
         batch_memory = self.replay_memory.sample(self.batch_size, self.trace_length)
@@ -247,5 +244,3 @@ class DRQN(BaseNetwork):
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.session.run(self.target_replace_op)
             #print("Loss: ", loss)
-
-        self.learn_step_counter += 1
