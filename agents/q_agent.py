@@ -75,8 +75,6 @@ class QAgent():
         self.last_state = self.state
         self.state = state
         self.terminal = int(game.check_end_game())
-        if (self.terminal):
-            print("TERMINAL")
 
 
     def select_action(self, available_actions):

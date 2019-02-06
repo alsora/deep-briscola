@@ -368,4 +368,14 @@ def play_episode(game, agents, train=True):
         # update the environment
         game.draw_step()
 
+    # TODO: this is ugly
+    # observe terminal state
+    for i, player_id in enumerate(players_order):
+        player = game.players[player_id]
+        agent = agents[player_id]
+        # agent observes state before acting
+        agent.observe(game, player)
+        if train and rewards:
+            agent.update(rewards[i])
+
     return game.end_game()
