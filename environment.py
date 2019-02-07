@@ -185,6 +185,8 @@ class BriscolaGame:
         ''' each player, in order, tries to draw a card'''
         self.logger.PVP("----------- NEW TURN -----------")
 
+        self.played_cards = []
+
         for player_id in self.players_order:
             player = self.players[player_id]
 
@@ -285,7 +287,6 @@ class BriscolaGame:
         winner_player_id = winner_player.id
         winner_player.points += points
 
-        self.played_cards = []
         self.turn_player = winner_player_id
         self.players_order = self.get_players_order()
 
@@ -342,34 +343,39 @@ def scoring(briscola_seed, card_0, card_1, keep_order=True):
 def play_episode(game, agents, train=True):
 
     game.reset()
+    rewards = []
     while not game.check_end_game():
 
         # action step
         players_order = game.get_players_order()
-        for player_id in players_order:
+        for i, player_id in enumerate(players_order):
 
             player = game.players[player_id]
             agent = agents[player_id]
             # agent observes state before acting
             agent.observe(game, player)
+
+            if train and rewards:
+                agent.update(rewards[i])
+
             available_actions = game.get_player_actions(player_id)
             action = agent.select_action(available_actions)
 
             game.play_step(action, player_id)
 
         rewards = game.get_rewards_from_step()
-        # update agents if training mode
-        if train:
-            for i, player_id in enumerate(players_order):
-                player = game.players[player_id]
-                agent = agents[player_id]
-                # agent observes new state after acting
-                agent.observe(game, player)
-
-                reward = rewards[i]
-                agent.update(reward)
 
         # update the environment
         game.draw_step()
+
+    # TODO: this is ugly
+    # observe terminal state
+    for i, player_id in enumerate(players_order):
+        player = game.players[player_id]
+        agent = agents[player_id]
+        # agent observes state before acting
+        agent.observe(game, player)
+        if train and rewards:
+            agent.update(rewards[i])
 
     return game.end_game()

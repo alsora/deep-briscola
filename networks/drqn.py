@@ -11,18 +11,19 @@ class ReplayMemory:
 
     def __init__(self, capacity, n_features):
 
-        # initialize zero memory, each sample in memory has size [s + a + r + s_ + t]
+        # initialize zero memory, each sample in memory has size episode_length * [s + a + r + s_ + t]
         # where s and s_ are 1xn_features, a r t are scalar
 
         self.capacity = capacity
-        self.event_size = n_features * 2 + 2
-        self.memory = np.zeros((self.capacity, 20, self.event_size))
+        self.episode_length = 20
+        self.event_size = n_features * 2 + 3
+        self.memory = np.zeros((self.capacity, self.episode_length, self.event_size))
         self.memory_counter = 0
 
-    def push(self, episode):
+    def push(self, item):
         # get the index where to insert the episode
         index = self.memory_counter % self.capacity
-        self.memory[index, :] = episode
+        self.memory[index, :] = item
 
         # increment memory_counter avoiding overflow (I only need to keep track if memory is full or not)
         self.memory_counter += 1
@@ -68,28 +69,25 @@ class DRQN(BaseNetwork):
         self.replace_target_iter = replace_target_iter
 
         # update parameters
-        self.learn_iter = 0
+        self.learn_step_counter = 0
         self.update_each = 8
-        self.update_after = 5000
+        self.update_after = 0
 
         # layers parameters
         self.lstm_layers = layers
-
-        # init vars
-        self.learn_step_counter = 0
-        self.session = None
 
         # TODO: use only 1 variable
         # store the sequence of states in an episode
         self.states_history = []
         # store the sequence of training samples (s, a, r, s_) in an episode
         self.samples_history = []
-        
+
         # create replay memroy
         capacity = 2500
         self.replay_memory = ReplayMemory(capacity, n_features)
 
         # create network
+        self.session = None
         self.create_network()
         self.initialize_session()
 
@@ -102,6 +100,7 @@ class DRQN(BaseNetwork):
             self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
             self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
             self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
+            self.terminal = tf.placeholder(tf.float32, [None, ], name='terminal') # indication if next state is terminal
             self.events_length = tf.placeholder(tf.int32, None, name='events_length')
             w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
@@ -151,7 +150,9 @@ class DRQN(BaseNetwork):
                 # discounted reward on the target network
                 rewards_history = tf.reshape(self.r, [-1,self.events_length])
                 current_rewards = rewards_history[:, -1]
-                q_target = current_rewards + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
+                terminal_history = tf.reshape(self.terminal, [-1,self.events_length])
+                current_terminals = terminal_history[:, -1]
+                q_target = current_rewards + (1. - current_terminals) * self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
                 # stop gradient to avoid updating target network
                 self.q_target = tf.stop_gradient(q_target)
             with tf.variable_scope('q_wrt_a'):
@@ -198,28 +199,26 @@ class DRQN(BaseNetwork):
 
         return q[0][-1]
 
-    def store(self, last_state, action, reward, state):
+    def store(self, last_state, action, reward, state, terminal):
         ''' Store the current experience in memory '''
 
-        state_vector = np.hstack((last_state, action, reward, state))
+        state_vector = np.hstack((last_state, action, reward, state, terminal))
         self.samples_history.append(state_vector)
 
         # if terminal state reached, I can store the full episode in memory
-        # HACK for check end episode
-        if len(self.samples_history) == 20:
+        if terminal:
             self.replay_memory.push(self.samples_history)
             self.samples_history = []
 
-    def learn(self, last_state, action, reward, state):
+    def learn(self, last_state, action, reward, state, terminal):
         ''' Sample from memory and train neural network on a batch of experiences '''
 
-        self.store(last_state, action, reward, state)
+        self.store(last_state, action, reward, state, terminal)
 
         # check if it's time to update the network
-        self.learn_iter += 1
-        if self.learn_iter % self.update_each != 0 or self.learn_iter < self.update_after:
+        self.learn_step_counter += 1
+        if self.learn_step_counter % self.update_each != 0 or self.learn_step_counter < self.update_after:
             return
-
         if self.replay_memory.size() < self.batch_size:
             # there are not enough samples for a training step in the replay memory
             return
@@ -234,7 +233,8 @@ class DRQN(BaseNetwork):
                 self.s: batch_memory[:, : self.n_features],
                 self.a: batch_memory[:, self.n_features],
                 self.r: batch_memory[:, self.n_features + 1],
-                self.s_: batch_memory[:, -self.n_features:],
+                self.s_: batch_memory[:, -self.n_features-1:-1],
+                self.terminal: batch_memory[:, -1],
                 self.events_length : self.trace_length,
             })
 
@@ -242,5 +242,3 @@ class DRQN(BaseNetwork):
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.session.run(self.target_replace_op)
             #print("Loss: ", loss)
-
-        self.learn_step_counter += 1

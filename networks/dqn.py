@@ -11,19 +11,20 @@ class ReplayMemory:
 
     def __init__(self, capacity, n_features):
 
+        # initialize zero memory, each sample in memory has size [s + a + r + s_ + t]
+        # where s and s_ are 1xn_features, a r t are scalar
+
         self.capacity = capacity
-        # initialize zero memory, each sample in memory has size [s + a + r + s_]
-        self.memory = np.zeros((self.capacity, n_features * 2 + 2))
+        self.event_size = n_features * 2 + 3
+        self.memory = np.zeros((self.capacity, self.event_size))
         self.memory_counter = 0
 
-    def push(self, s, a, r, s_):
-        # stacks together all states element
-        event = np.hstack((s, a, r, s_))
+    def push(self, item):
         # get the index where to insert the event
         index = self.memory_counter % self.capacity
-        self.memory[index, :] = event
+        self.memory[index, :] = item
 
-        # increment memory_counter avoiding overflow
+        # increment memory_counter avoiding overflow (I only need to keep track if memory is full or not)
         self.memory_counter += 1
         if self.memory_counter == (self.capacity * 2):
             self.memory_counter = self.capacity
@@ -58,18 +59,20 @@ class DQN(BaseNetwork):
         self.batch_size = batch_size
         self.replace_target_iter = replace_target_iter
 
-        self.layers = layers
-
-        # init vars
+        # update parameters
         self.learn_step_counter = 0
-        self.wrong_move = False
-        self.session = None
+        self.update_each = 1
+        self.update_after = 5000
+
+        # layers parameters
+        self.layers = layers
 
         # create replay memroy
         capacity = 10000
         self.replay_memory = ReplayMemory(capacity, self.n_features)
 
         # create network
+        self.session = None
         self.create_network()
         self.initialize_session()
 
@@ -83,6 +86,7 @@ class DQN(BaseNetwork):
             self.a = tf.placeholder(tf.int32, [None, ], name='actions')  # input Action
             self.r = tf.placeholder(tf.float32, [None, ], name='rewards')  # input Reward
             self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='states_')  # input Next State
+            self.terminal = tf.placeholder(tf.float32, [None, ], name='terminal') # indication if next state is terminal
 
             w_initializer, b_initializer = tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)
 
@@ -111,7 +115,7 @@ class DQN(BaseNetwork):
                 self.argmax_action = tf.argmax(self.q, 1, output_type=tf.int32, name="argmax")
             with tf.variable_scope('q_target'):
                 # discounted reward on the target network
-                q_target = self.r + self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
+                q_target = self.r + (1. - self.terminal) * self.gamma * tf.reduce_max(self.q_next, axis=1, name='q_target')
                 # stop gradient to avoid updating target network
                 self.q_target = tf.stop_gradient(q_target)
             with tf.variable_scope('q_wrt_a'):
@@ -146,16 +150,29 @@ class DQN(BaseNetwork):
 
         return q[0][0]
 
+    def store(self, last_state, action, reward, state, terminal):
+        ''' Store the current experience in memory '''
 
-    def learn(self, last_state, action, reward, state):
+        # stacks together all states element
+        state_vector = np.hstack((last_state, action, reward, state, terminal))
+
+        self.replay_memory.push(state_vector)
+
+
+    def learn(self, last_state, action, reward, state, terminal):
         ''' Sample from memory and train neural network on a batch of experiences '''
 
-        # I have a full event [s, a, r, s_], push it into replay memory
-        self.replay_memory.push(last_state, action, reward, state)
+        self.store(last_state, action, reward, state, terminal)
+
+        # check if it's time to update the network
+        self.learn_step_counter += 1
+        if self.learn_step_counter % self.update_each != 0 or self.learn_step_counter < self.update_after:
+            return
 
         if self.replay_memory.size() < self.batch_size:
             # there are not enough samples for a training step in the replay memory
             return
+
         # get a batch of samples from replay memory
         batch_memory = self.replay_memory.sample(self.batch_size)
 
@@ -166,14 +183,13 @@ class DQN(BaseNetwork):
                 self.s: batch_memory[:, : self.n_features],
                 self.a: batch_memory[:, self.n_features],
                 self.r: batch_memory[:, self.n_features + 1],
-                self.s_: batch_memory[:, -self.n_features:],
+                self.s_: batch_memory[:, -self.n_features-1:-1],
+                self.terminal: batch_memory[:, -1],
             })
 
         # check if it's time to copy the target network into the evaluation network
         if self.learn_step_counter % self.replace_target_iter == 0:
             self.session.run(self.target_replace_op)
-            print("Loss: ", loss)
-
-        self.learn_step_counter += 1
+            #print("Loss: ", loss)
 
 
