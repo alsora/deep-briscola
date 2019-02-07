@@ -18,13 +18,15 @@ from utils import BriscolaLogger
 from utils import CardsEncoding, CardsOrder, NetworkTypes, PlayerState
 
 
+### New arena self play mode
+
 
 class CopyAgent(QAgent):
     '''Copied agent. Identical to a QAgent, but does not update itself'''
     def __init__(self, agent):
 
         # create a default QAgent
-        super().__init__()
+        super().__init__(network=agent.network)
 
         # make the CopyAgent always greedy
         self.epsilon = 1.0
@@ -43,17 +45,16 @@ class CopyAgent(QAgent):
 
         # remove the temp directory after loading the model into the CopyAgent
         shutil.rmtree('__tmp_model_dir__')
-
+        
 
     def update(self, *args):
         pass
 
 
-
-def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
+def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
 
     # initialize the list of old agents with a copy of the non trained agent
-    old_agents = [CopyAgent(agent)]
+    old_agents = [[CopyAgent(agent1)], [CopyAgent(agent2)]]
 
     # Training starts
     best_total_wins = -1
@@ -62,54 +63,59 @@ def self_train(game, agent, num_epochs, evaluate_every, num_evaluations, model_d
                             prefix = f'Epoch: {epoch}',
                             length= 50)
 
-        # picking an agent from the past as adversary
-        agents = [agent, random.choice(old_agents)]
-
-        # Play a briscola game to train the agent
-        brisc.play_episode(game, agents)
-
-        # Evaluation step
-        if epoch % evaluate_every == 0:
-
-            # Evaluation visualization directory
-            if not os.path.isdir(evaluation_dir):
-                os.mkdir(evaluation_dir)
-
-            for ag in agents:
-                ag.make_greedy()
-
-            # Evaluation against old copy agent
-            winners, points = evaluate(game, agents, num_evaluations)
-            victory_rates_hist.append(winners)
-            average_points_hist.append(points)
-
-            output_path = evaluation_dir + "/fig_" + str(epoch)
-            std_cur = gv.eval_visua_for_self_play(average_points_hist,
-                             FLAGS,
-                             victory_rates_hist,
-                             output_path=output_path)
-            # Storing std
-            std_hist.append(std_cur)
-
-            # Evaluation against random agent
-            winners, points = evaluate(game, [agent, RandomAgent()], FLAGS.num_evaluations)
-            output_prefix = evaluation_dir + '/againstRandom_' + str(epoch)
-            gv.stats_plotter([agent, RandomAgent()], points, winners, output_prefix=output_prefix)
-
-            # Saving the model if the agent performs better against random agent
-            if winners[0] > best_total_wins:
-                best_total_wins = winners[0]
-                agent.save_model(model_dir)
-
-            for ag in agents:
-                ag.restore_epsilon()
-
-            # After the evaluation we add the agent to the old agents
-            old_agents.append(CopyAgent(agent))
-
-            # Eliminating the oldest agent if maximum number of agents
-            if len(old_agents) > FLAGS.max_old_agents:
-                old_agents.pop(0)
+        for a in [agent1,agent2]:
+    
+            other = 0 if a == agent2 else 1
+            
+            
+            # picking an agent from the past as adversary
+            agents = [a, random.choice(old_agents[other])]
+    
+            # Play a briscola game to train the agent
+            brisc.play_episode(game, agents)
+    
+            # Evaluation step
+            if epoch % evaluate_every == 0:
+    
+                # Evaluation visualization directory
+                if not os.path.isdir(evaluation_dir):
+                    os.mkdir(evaluation_dir)
+    
+                for ag in agents:
+                    ag.make_greedy()
+    
+                # Evaluation against old copy agent
+                winners, points = evaluate(game, agents, num_evaluations)
+                victory_rates_hist.append(winners)
+                average_points_hist.append(points)
+    
+                output_path = evaluation_dir + "/fig_" + str(epoch)
+                std_cur = gv.eval_visua_for_self_play(average_points_hist,
+                                 FLAGS,
+                                 victory_rates_hist,
+                                 output_path=output_path)
+                # Storing std
+                std_hist.append(std_cur)
+    
+                # Evaluation against random agent
+                winners, points = evaluate(game, [a, RandomAgent()], FLAGS.num_evaluations)
+                output_prefix = a.name + ' vs Random_' + str(epoch)
+                gv.stats_plotter([a, RandomAgent()], points, winners, output_prefix=output_prefix)
+    
+                # Saving the model if the agent performs better against random agent
+                if winners[0] > best_total_wins:
+                    best_total_wins = winners[0]
+                    a.save_model(model_dir)
+    
+                for ag in agents:
+                    ag.restore_epsilon()
+    
+                # After the evaluation we add the agent to the old agents
+                old_agents[other].append(CopyAgent(a))
+    
+                # Eliminating the oldest agent if maximum number of agents
+                if len(old_agents) > FLAGS.max_old_agents:
+                    old_agents.pop(0)
 
     return best_total_wins
 
@@ -136,7 +142,7 @@ def main(argv=None):
     game = brisc.BriscolaGame(2, logger)
 
     # Initialize agent
-    agent = QAgent(
+    agent1 = QAgent(        
         FLAGS.epsilon,
         FLAGS.epsilon_increment,
         FLAGS.epsilon_max,
@@ -145,15 +151,26 @@ def main(argv=None):
         FLAGS.layers,
         FLAGS.learning_rate,
         FLAGS.replace_target_iter,
-        FLAGS.batch_size)
+        FLAGS.batch_size
+     )
+    agent2 = QAgent(        
+        FLAGS.epsilon,
+        FLAGS.epsilon_increment,
+        FLAGS.epsilon_max,
+        FLAGS.discount,
+        FLAGS.network,
+        FLAGS.layers,
+        FLAGS.learning_rate,
+        FLAGS.replace_target_iter,
+        FLAGS.batch_size
+    )
 
     # Training
-    best_total_wins = self_train(game, agent,
+    best_total_wins = self_train(game, agent1, agent2,
                                     FLAGS.num_epochs,
                                     FLAGS.evaluate_every,
                                     FLAGS.num_evaluations,
-                                    FLAGS.model_dir,
-                                    FLAGS.evaluation_dir)
+                                    FLAGS.model_dir)
     print('Best winning ratio : {:.2%}'.format(best_total_wins/FLAGS.num_evaluations))
     # Summary graph
     gv.summ_vis_self_play(victory_rates_hist, std_hist, FLAGS)
@@ -169,13 +186,12 @@ if __name__ == '__main__':
 
     # Training parameters
     parser.add_argument("--model_dir", default="saved_model", help="Where to save the trained model, checkpoints and stats", type=str)
-    parser.add_argument("--num_epochs", default=100000, help="Number of training games played", type=int)
+    parser.add_argument("--num_epochs", default=300, help="Number of training games played", type=int)
     parser.add_argument("--max_old_agents", default=50, help="Maximum number of old copies of QAgent stored", type=int)
 
     # Evaluation parameters
-    parser.add_argument("--evaluate_every", default=1000, help="Evaluate model after this many epochs", type=int)
+    parser.add_argument("--evaluate_every", default=100, help="Evaluate model after this many epochs", type=int)
     parser.add_argument("--num_evaluations", default=500, help="Number of evaluation games against each type of opponent for each test", type=int)
-    parser.add_argument("--evaluation_dir", default="evaluation_dir", help="Directory where plots are stored", type=str)
 
     # State parameters
     parser.add_argument("--cards_order", default=CardsOrder.APPEND, choices=[CardsOrder.APPEND, CardsOrder.REPLACE, CardsOrder.VALUE], help="Where a drawn card is put in the hand")
@@ -189,7 +205,7 @@ if __name__ == '__main__':
     parser.add_argument("--discount", default=0.85, help="How much a reward is discounted after each step", type=float)
 
     # Network parameters
-    parser.add_argument("--network", default=NetworkTypes.DRQN, choices=[NetworkTypes.DQN, NetworkTypes.DRQN], help="Neural Network used for approximating value function")
+    parser.add_argument("--network", default=NetworkTypes.DQN, choices=[NetworkTypes.DQN, NetworkTypes.DRQN], help="Neural Network used for approximating value function")
     parser.add_argument('--layers', default=[256, 128], help="Definition of layers for the chosen network", type=int, nargs='+')
     parser.add_argument("--learning_rate", default=1e-4, help="Learning rate for the network updates", type=float)
     parser.add_argument("--replace_target_iter", default=2000, help="Number of update steps before copying evaluation weights into target network", type=int)

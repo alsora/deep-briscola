@@ -27,6 +27,7 @@ class QAgent():
         self.reward = None
         self.state = None
         self.terminal = None
+        self.network = network
 
         # create q learning algorithm
         if network == NetworkTypes.DQN:
