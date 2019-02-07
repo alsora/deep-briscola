@@ -37,43 +37,67 @@ def stats_plotter(agents, points, total_wins, output_prefix = ''):
         __plt.close()
 
 
-def eval_visua_for_self_play(average_points_hist,
-                             FLAGS,
-                             victory_rates_hist,
-                             output_path=''):
-    '''
-    Return the std calculated on all the points of the two player
-    '''
-    df  = __np.array(average_points_hist)
-    evaluation_num = len(df[:,0,0])
-    eval_df = __np.array(average_points_hist)[evaluation_num-1,:,:]
-    eval_df = __pd.DataFrame(eval_df.T, columns = ["Agent 0","Agent 1"])
-
-    eval_df.plot()
-    __plt.hlines([__np.mean(eval_df.values),
-                __np.mean(eval_df.values)+__np.std(eval_df.values),
-                __np.mean(eval_df.values)-__np.std(eval_df.values)],
-               0, len(df[0,0,:]), color = ['green','red','red'],
-               label = 'mean+-std')
-    __plt.title(f"""Eval:{evaluation_num}_
-              epoch:{evaluation_num*FLAGS.evaluate_every}_
-              pctWinBest:{max(victory_rates_hist[-1])}_
-              std:{__np.std(eval_df.values).round(2)}""".replace('\n','').replace(' ',''))
-    __plt.ylim(0,120)
-    __plt.xlabel("Evaluation step")
-    __plt.ylabel("Points")
-    __plt.legend()
-
-    if output_path:
-        # if an output path is specified, save the plot
-        __plt.savefig(output_path)
-    else:
-        # else show it
-        __plt.show()
-
+def evaluate_summary(winners, points, agents, evaluation_dir):
+    fig, ax = __plt.subplots(figsize=(12,8))
+    __plt.bar([0,1], winners, edgecolor = 'blue', color = 'yellow')
+    __plt.ylim((min(winners)-5,max(winners)+5))          
+    __plt.xticks([0,1], [ag.name for ag in agents])
+    __plt.ylabel("# of victories")
+    __plt.text(0.25, 0.1, f'STD points: {round(__np.std(points[0]),2)}', {"size" : 18},
+                horizontalalignment='center', color = 'black',
+                verticalalignment='center', transform=ax.transAxes,
+                bbox=dict(facecolor='cyan', alpha=0.4))                
+    __plt.text(0.75, 0.1,  f'STD points: {round(__np.std(points[1]),2)}', {"size" : 18}, 
+                horizontalalignment='center', color = 'black',
+                verticalalignment='center', transform=ax.transAxes,
+                bbox=dict(facecolor='cyan', alpha=0.4))                
+    __plt.text(0.25, 0.2, f'MEAN points: {round(__np.mean(points[0]),2)}', {"size" : 18}, 
+                horizontalalignment='center', color = 'black',
+                verticalalignment='center', transform=ax.transAxes,
+                bbox=dict(facecolor='cyan', alpha=0.4))                
+    __plt.text(0.75, 0.2,  f'MEAN points: {round(__np.mean(points[1]),2)}', {"size" : 18}, 
+                horizontalalignment='center', color = 'black',
+                verticalalignment='center', transform=ax.transAxes,
+                bbox=dict(facecolor='cyan', alpha=0.4))       
+    __plt.title(evaluation_dir[evaluation_dir.find('/')+1:])         
+    __plt.savefig(evaluation_dir)
     __plt.close()
 
-    return __np.std(eval_df.values).round(2)
+def training_summary(x, vict_hist, point_hist, labels, FLAGS, evaluation_dir):
+
+    fig, ax = __plt.subplots(2,1, figsize=(12,8), sharex=True)
+    fig.subplots_adjust(hspace=0)
+    ax[0].set_title(f"Summary of {FLAGS.num_epochs} epochs", {'size' : 21})
+
+    y1 = __np.asarray(vict_hist).T[0]/FLAGS.num_evaluations
+    y2 = __np.asarray(vict_hist).T[1]/FLAGS.num_evaluations
+    ax[0].plot(x, y1, linestyle ='--', label = labels[0], color = 'green')
+    ax[0].plot(x, y2, linestyle ='--', label = labels[0], color = 'red')
+    ax[0].set_ylabel('Victory %', {'size' : 15})
+    ax[0].hlines(__np.mean(y1),x[0],x[-1], alpha = 0.2, color = 'green')
+    ax[0].hlines(__np.mean(y2),x[0],x[-1], alpha = 0.2, color = 'red')
+    ax[0].legend()
+    
+    y1 = __np.mean(__np.asarray(point_hist)[:,0,:],1)
+    y2 = __np.mean(__np.asarray(point_hist)[:,1,:],1)
+    y3 = __np.std(__np.asarray(point_hist)[:,0,:],1) 
+    y4 = __np.std(__np.asarray(point_hist)[:,1,:],1) 
+    
+    ax[1].plot(x, y1, linestyle ='--', label = labels[0], color = 'green')
+    ax[1].plot(x, y2, linestyle ='--', label = labels[0], color = 'red')
+    ax[1].scatter(x, y1, y3, label = labels[0]+' std', color = 'green')
+    ax[1].scatter(x, y2, y4, label = labels[0]+' std', color = 'red')
+    ax[1].set_ylabel('Mean point obtained', {'size' : 15})
+    ax[1].set_xlabel('Epoch', {'size' : 15})
+    ax[1].hlines(__np.mean(y1),x[0],x[-1], alpha = 0.2, color = 'green')
+    ax[1].hlines(__np.mean(y2),x[0],x[-1], alpha = 0.2, color = 'red')
+    ax[1].legend()
+    
+    __plt.savefig(evaluation_dir)
+    __plt.close()
+
+
+
 
 
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = ' '):
