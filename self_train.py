@@ -56,7 +56,7 @@ class CopyAgent(QAgent):
         pass
 
 
-def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
+def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations, copy_every, model_dir = "", evaluation_dir = "evaluation_dir"):
 
     # initialize the list of old agents with a copy of the non trained agent
     old_agents = [[CopyAgent(agent1)], [CopyAgent(agent2)]]
@@ -118,16 +118,20 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
                 ag.restore_epsilon()
 
             # Saving the model if the agent performs better against random agent
-            if winners[0] > best_total_wins:
-                best_total_wins = winners[0]
-                a.save_model(model_dir)
+#            if winners[0] > best_total_wins:
+#                best_total_wins = winners[0]
+#                a.save_model(model_dir)
 
-            # After the evaluation we add the agent to the old agents
+                
+        if epoch % copy_every == 0:
+            
             old_agents[other].append(CopyAgent(a))
 
             # Eliminating the oldest agent if maximum number of agents
             if len(old_agents) > FLAGS.max_old_agents:
-                old_agents.pop(0)
+                old_agents.pop(0)                
+                
+                
 
     return best_total_wins
 
@@ -190,11 +194,12 @@ def main(argv=None):
                                     FLAGS.num_epochs,
                                     FLAGS.evaluate_every,
                                     FLAGS.num_evaluations,
+                                    FLAGS.copy_every,
                                     FLAGS.model_dir)
     print('Best winning ratio : {:.2%}'.format(best_total_wins/FLAGS.num_evaluations))
-    # Summary graph
-    import matplotlib.pyplot as plt
-
+    
+    
+    # Summary graphs
     x = [FLAGS.evaluate_every*i for i in range(1,1+len(victory_history_1v2))]
 
     # 1v2
@@ -212,10 +217,22 @@ def main(argv=None):
     # 2vRandom
     vict_hist = victory_history_2vR
     point_hist = points_history_2vR
-    labels = [agent1.name+'2', RandomAgent().name]
+    labels = [agent2.name+'2', RandomAgent().name]
     gv.training_summary(x, vict_hist, point_hist, labels, FLAGS, "evaluation_dir/2vR")
     
     
+     # Evaluation against ai agent
+    agents = [agent1,AIAgent()]
+    winners, points = evaluate(game, agents, FLAGS.num_evaluations)
+    gv.evaluate_summary(winners, points, agents, 'evaluation_dir'+
+        f'/{agents[0].name}1 vs {agents[1].name}')              
+    
+    agents = [agent2,AIAgent()]
+    winners, points = evaluate(game, agents, FLAGS.num_evaluations)
+    gv.evaluate_summary(winners, points, agents, 'evaluation_dir'+
+        f'/{agents[0].name}2 vs {agents[1].name}')            
+
+
 
 
 
@@ -229,11 +246,11 @@ if __name__ == '__main__':
 
     # Training parameters
     parser.add_argument("--model_dir", default="saved_model", help="Where to save the trained model, checkpoints and stats", type=str)
-    parser.add_argument("--num_epochs", default=300, help="Number of training games played", type=int)
+    parser.add_argument("--num_epochs", default=50000, help="Number of training games played", type=int)
     parser.add_argument("--max_old_agents", default=50, help="Maximum number of old copies of QAgent stored", type=int)
 
     # Evaluation parameters
-    parser.add_argument("--evaluate_every", default=100, help="Evaluate model after this many epochs", type=int)
+    parser.add_argument("--evaluate_every", default=5000, help="Evaluate model after this many epochs", type=int)
     parser.add_argument("--num_evaluations", default=500, help="Number of evaluation games against each type of opponent for each test", type=int)
 
     # State parameters
@@ -246,6 +263,7 @@ if __name__ == '__main__':
     parser.add_argument("--epsilon_increment", default=5e-5, help="How much epsilon is increased after each action taken up to epsilon_max", type=float)
     parser.add_argument("--epsilon_max", default=0.85, help="The maximum value for the incremented epsilon", type=float)
     parser.add_argument("--discount", default=0.85, help="How much a reward is discounted after each step", type=float)
+    parser.add_argument("--copy_every", default=500, help="Add the copy after tot number of epochs", type=int)
 
     # Network parameters
     parser.add_argument("--network", default=NetworkTypes.DQN, choices=[NetworkTypes.DQN, NetworkTypes.DRQN], help="Neural Network used for approximating value function")

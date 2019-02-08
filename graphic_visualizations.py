@@ -39,8 +39,8 @@ def stats_plotter(agents, points, total_wins, output_prefix = ''):
 
 def evaluate_summary(winners, points, agents, evaluation_dir):
     fig, ax = __plt.subplots(figsize=(12,8))
-    __plt.bar([0,1], winners, edgecolor = 'blue', color = 'yellow')
-    __plt.ylim((min(winners)-5,max(winners)+5))          
+    __plt.bar([0,1], __np.asarray(winners)/sum(winners), edgecolor = 'blue', color = 'yellow')
+    __plt.ylim(0,1)          
     __plt.xticks([0,1], [ag.name for ag in agents])
     __plt.ylabel("# of victories")
     __plt.text(0.25, 0.1, f'STD points: {round(__np.std(points[0]),2)}', {"size" : 18},
@@ -72,8 +72,9 @@ def training_summary(x, vict_hist, point_hist, labels, FLAGS, evaluation_dir):
     y1 = __np.asarray(vict_hist).T[0]/FLAGS.num_evaluations
     y2 = __np.asarray(vict_hist).T[1]/FLAGS.num_evaluations
     ax[0].plot(x, y1, linestyle ='--', label = labels[0], color = 'green')
-    ax[0].plot(x, y2, linestyle ='--', label = labels[0], color = 'red')
+    ax[0].plot(x, y2, linestyle ='--', label = labels[1], color = 'red')
     ax[0].set_ylabel('Victory %', {'size' : 15})
+    ax[0].set_ylim(0,1)
     ax[0].hlines(__np.mean(y1),x[0],x[-1], alpha = 0.2, color = 'green')
     ax[0].hlines(__np.mean(y2),x[0],x[-1], alpha = 0.2, color = 'red')
     ax[0].legend()
@@ -84,9 +85,9 @@ def training_summary(x, vict_hist, point_hist, labels, FLAGS, evaluation_dir):
     y4 = __np.std(__np.asarray(point_hist)[:,1,:],1) 
     
     ax[1].plot(x, y1, linestyle ='--', label = labels[0], color = 'green')
-    ax[1].plot(x, y2, linestyle ='--', label = labels[0], color = 'red')
+    ax[1].plot(x, y2, linestyle ='--', label = labels[1], color = 'red')
     ax[1].scatter(x, y1, y3, label = labels[0]+' std', color = 'green')
-    ax[1].scatter(x, y2, y4, label = labels[0]+' std', color = 'red')
+    ax[1].scatter(x, y2, y4, label = labels[1]+' std', color = 'red')
     ax[1].set_ylabel('Mean point obtained', {'size' : 15})
     ax[1].set_xlabel('Epoch', {'size' : 15})
     ax[1].hlines(__np.mean(y1),x[0],x[-1], alpha = 0.2, color = 'green')
