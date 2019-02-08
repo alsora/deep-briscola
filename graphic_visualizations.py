@@ -86,8 +86,8 @@ def training_summary(x, vict_hist, point_hist, labels, FLAGS, evaluation_dir):
     
     ax[1].plot(x, y1, linestyle ='--', label = labels[0], color = 'green')
     ax[1].plot(x, y2, linestyle ='--', label = labels[1], color = 'red')
-    ax[1].scatter(x, y1, y3, label = labels[0]+' std', color = 'green')
-    ax[1].scatter(x, y2, y4, label = labels[1]+' std', color = 'red')
+#    ax[1].scatter(x, y1, y3, label = labels[0]+' std', color = 'green')
+#    ax[1].scatter(x, y2, y4, label = labels[1]+' std', color = 'red')
     ax[1].set_ylabel('Mean point obtained', {'size' : 15})
     ax[1].set_xlabel('Epoch', {'size' : 15})
     ax[1].hlines(__np.mean(y1),x[0],x[-1], alpha = 0.2, color = 'green')
