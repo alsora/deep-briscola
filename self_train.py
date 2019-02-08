@@ -73,13 +73,12 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
         for a in [agent1,agent2]:
             other = 0 if a == agent2 else 1
             
+            
             # picking an agent from the past as adversary
             agents = [a, random.choice(old_agents[other])]
     
             # Play a briscola game to train the agent
             brisc.play_episode(game, agents)
-    
-    
     
         # Evaluation step
         if epoch % evaluate_every == 0:
@@ -127,7 +126,6 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
             # Getting ready for more training
             for ag in [agent1,agent2]:
                 ag.restore_epsilon()
-
 
                 
         if epoch % copy_every == 0:
@@ -252,11 +250,12 @@ if __name__ == '__main__':
 
     # Training parameters
     parser.add_argument("--model_dir", default="saved_model", help="Where to save the trained model, checkpoints and stats", type=str)
-    parser.add_argument("--num_epochs", default=200000, help="Number of training games played", type=int)
-    parser.add_argument("--max_old_agents", default=200, help="Maximum number of old copies of QAgent stored", type=int)
+    parser.add_argument("--num_epochs", default=1000, help="Number of training games played", type=int)
+    parser.add_argument("--max_old_agents", default=50, help="Maximum number of old copies of QAgent stored", type=int)
+    parser.add_argument("--copy_every", default=100, help="Add the copy after tot number of epochs", type=int)
 
     # Evaluation parameters
-    parser.add_argument("--evaluate_every", default=2000, help="Evaluate model after this many epochs", type=int)
+    parser.add_argument("--evaluate_every", default=100, help="Evaluate model after this many epochs", type=int)
     parser.add_argument("--num_evaluations", default=500, help="Number of evaluation games against each type of opponent for each test", type=int)
 
     # State parameters
@@ -269,7 +268,6 @@ if __name__ == '__main__':
     parser.add_argument("--epsilon_increment", default=5e-5, help="How much epsilon is increased after each action taken up to epsilon_max", type=float)
     parser.add_argument("--epsilon_max", default=0.85, help="The maximum value for the incremented epsilon", type=float)
     parser.add_argument("--discount", default=0.85, help="How much a reward is discounted after each step", type=float)
-    parser.add_argument("--copy_every", default=1000, help="Add the copy after tot number of epochs", type=int)
 
     # Network parameters
     parser.add_argument("--network", default=NetworkTypes.DQN, choices=[NetworkTypes.DQN, NetworkTypes.DRQN], help="Neural Network used for approximating value function")
