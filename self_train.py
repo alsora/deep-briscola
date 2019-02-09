@@ -1,9 +1,11 @@
 import tensorflow as tf
 import argparse
 import numpy as np
-import os
+import os, time
 import random
 import shutil
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # or any {'0', '1', '2'}
 
 
 ## our stuff import
@@ -46,12 +48,17 @@ class CopyAgent(QAgent):
         # remove the temp directory after loading the model into the CopyAgent
         shutil.rmtree('__tmp_model_dir__')
         
+        self.name = "CopyAgent"
+        
+        # A copy agent must always be greedy since it is not learning
+        self.make_greedy()
+        
 
     def update(self, *args):
         pass
 
 
-def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations, model_dir = "", evaluation_dir = "evaluation_dir"):
+def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations, copy_every, model_dir = "", evaluation_dir = "evaluation_dir"):
 
     # initialize the list of old agents with a copy of the non trained agent
     old_agents = [[CopyAgent(agent1)], [CopyAgent(agent2)]]
@@ -64,7 +71,6 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
                             length= 50)
 
         for a in [agent1,agent2]:
-    
             other = 0 if a == agent2 else 1
             
             
@@ -74,48 +80,63 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
             # Play a briscola game to train the agent
             brisc.play_episode(game, agents)
     
-            # Evaluation step
-            if epoch % evaluate_every == 0:
-    
-                # Evaluation visualization directory
-                if not os.path.isdir(evaluation_dir):
-                    os.mkdir(evaluation_dir)
-    
-                for ag in agents:
-                    ag.make_greedy()
-    
-                # Evaluation against old copy agent
-                winners, points = evaluate(game, agents, num_evaluations)
-                victory_rates_hist.append(winners)
-                average_points_hist.append(points)
-    
-                output_path = evaluation_dir + "/fig_" + str(epoch)
-                std_cur = gv.eval_visua_for_self_play(average_points_hist,
-                                 FLAGS,
-                                 victory_rates_hist,
-                                 output_path=output_path)
-                # Storing std
-                std_hist.append(std_cur)
-    
-                # Evaluation against random agent
-                winners, points = evaluate(game, [a, RandomAgent()], FLAGS.num_evaluations)
-                output_prefix = a.name + ' vs Random_' + str(epoch)
-                gv.stats_plotter([a, RandomAgent()], points, winners, output_prefix=output_prefix)
-    
-                # Saving the model if the agent performs better against random agent
-                if winners[0] > best_total_wins:
-                    best_total_wins = winners[0]
-                    a.save_model(model_dir)
-    
-                for ag in agents:
-                    ag.restore_epsilon()
-    
-                # After the evaluation we add the agent to the old agents
-                old_agents[other].append(CopyAgent(a))
-    
-                # Eliminating the oldest agent if maximum number of agents
-                if len(old_agents) > FLAGS.max_old_agents:
-                    old_agents.pop(0)
+        # Evaluation step
+        if epoch % evaluate_every == 0:
+
+            # Evaluation visualization directory
+            if not os.path.isdir(evaluation_dir):
+                os.mkdir(evaluation_dir)
+
+            # Greedy for evaluation
+            for ag in [agent1,agent2]:
+                ag.make_greedy()
+
+            # Evaluation of the two agents
+            agents = [agent1,agent2]
+            winners, points = evaluate(game, agents, num_evaluations)
+            gv.evaluate_summary(winners, points, agents, evaluation_dir+
+                f'/epoch:{epoch} {agents[0].name}1 vs {agents[1].name}2')              
+            victory_history_1v2.append(winners)
+            points_history_1v2.append(points)
+            
+            # Evaluation against random agent
+            agents = [agent1,RandomAgent()]
+            winners, points = evaluate(game, agents, num_evaluations)
+            gv.evaluate_summary(winners, points, agents, evaluation_dir+
+                f'/epoch:{epoch} {agents[0].name}1 vs {agents[1].name}')              
+            victory_history_1vR.append(winners)
+            points_history_1vR.append(points)
+            # Saving the model if the agent performs better against random agent
+            if winners[0] > best_total_wins:
+                best_total_wins = winners[0]
+                agent1.save_model(model_dir)
+
+
+            agents = [agent2,RandomAgent()]
+            winners, points = evaluate(game, agents, num_evaluations)
+            gv.evaluate_summary(winners, points, agents, evaluation_dir+
+                f'/epoch:{epoch} {agents[0].name}2 vs {agents[1].name}')              
+            victory_history_2vR.append(winners)
+            points_history_2vR.append(points)                
+            # Saving the model if the agent performs better against random agent
+            if winners[0] > best_total_wins:
+                best_total_wins = winners[0]
+                agent2.save_model(model_dir)
+
+            # Getting ready for more training
+            for ag in [agent1,agent2]:
+                ag.restore_epsilon()
+
+                
+        if epoch % copy_every == 0:
+            
+            old_agents[other].append(CopyAgent(a))
+
+            # Eliminating the oldest agent if maximum number of agents
+            if len(old_agents) > FLAGS.max_old_agents:
+                old_agents.pop(0)                
+                
+                
 
     return best_total_wins
 
@@ -123,25 +144,33 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
 
 def main(argv=None):
 
-    global victory_rates_hist
-    victory_rates_hist  = []
-    global average_points_hist
-    average_points_hist = []
-    global std_hist
-    std_hist = []
+    global victory_history_1v2
+    victory_history_1v2  = []
+    
+    global victory_history_1vR
+    victory_history_1vR  = []
+    
+    global victory_history_2vR
+    victory_history_2vR  = []
 
-    global victory_rates_hist_against_Random
-    victory_rates_hist_against_Random  = []
-    global average_points_hist_against_Random
-    average_points_hist_against_Random = []
-    global std_hist_against_Random
-    std_hist_against_Random = []
+
+    global points_history_1v2
+    points_history_1v2  = []
+    
+    global points_history_1vR
+    points_history_1vR  = []
+    
+    global points_history_2vR
+    points_history_2vR  = []
+
+
 
     # Initializing the environment
     logger = BriscolaLogger(BriscolaLogger.LoggerLevels.TRAIN)
     game = brisc.BriscolaGame(2, logger)
 
     # Initialize agent
+    global agent1
     agent1 = QAgent(        
         FLAGS.epsilon,
         FLAGS.epsilon_increment,
@@ -153,6 +182,7 @@ def main(argv=None):
         FLAGS.replace_target_iter,
         FLAGS.batch_size
      )
+    global agent2
     agent2 = QAgent(        
         FLAGS.epsilon,
         FLAGS.epsilon_increment,
@@ -166,14 +196,48 @@ def main(argv=None):
     )
 
     # Training
+    start_time = time.time()
     best_total_wins = self_train(game, agent1, agent2,
                                     FLAGS.num_epochs,
                                     FLAGS.evaluate_every,
                                     FLAGS.num_evaluations,
+                                    FLAGS.copy_every,
                                     FLAGS.model_dir)
     print('Best winning ratio : {:.2%}'.format(best_total_wins/FLAGS.num_evaluations))
-    # Summary graph
-    gv.summ_vis_self_play(victory_rates_hist, std_hist, FLAGS)
+    print(time.time()-start_time)
+    
+    # Summary graphs
+    x = [FLAGS.evaluate_every*i for i in range(1,1+len(victory_history_1v2))]
+
+    # 1v2
+    vict_hist = victory_history_1v2
+    point_hist = points_history_1v2
+    labels = [agent1.name+'1', agent2.name+'2']
+    gv.training_summary(x, vict_hist, point_hist, labels, FLAGS, "evaluation_dir/1v2")
+    
+    # 1vRandom
+    vict_hist = victory_history_1vR
+    point_hist = points_history_1vR
+    labels = [agent1.name+'1', RandomAgent().name]
+    gv.training_summary(x, vict_hist, point_hist, labels, FLAGS, "evaluation_dir/1vR")
+    
+    # 2vRandom
+    vict_hist = victory_history_2vR
+    point_hist = points_history_2vR
+    labels = [agent2.name+'2', RandomAgent().name]
+    gv.training_summary(x, vict_hist, point_hist, labels, FLAGS, "evaluation_dir/2vR")
+    
+    
+     # Evaluation against ai agent
+    agents = [agent1,AIAgent()]
+    winners, points = evaluate(game, agents, FLAGS.num_evaluations)
+    gv.evaluate_summary(winners, points, agents, 'evaluation_dir'+
+        f'/{agents[0].name}1 vs {agents[1].name}')              
+    
+    agents = [agent2,AIAgent()]
+    winners, points = evaluate(game, agents, FLAGS.num_evaluations)
+    gv.evaluate_summary(winners, points, agents, 'evaluation_dir'+
+        f'/{agents[0].name}2 vs {agents[1].name}')            
 
 
 
@@ -186,8 +250,9 @@ if __name__ == '__main__':
 
     # Training parameters
     parser.add_argument("--model_dir", default="saved_model", help="Where to save the trained model, checkpoints and stats", type=str)
-    parser.add_argument("--num_epochs", default=300, help="Number of training games played", type=int)
+    parser.add_argument("--num_epochs", default=1000, help="Number of training games played", type=int)
     parser.add_argument("--max_old_agents", default=50, help="Maximum number of old copies of QAgent stored", type=int)
+    parser.add_argument("--copy_every", default=100, help="Add the copy after tot number of epochs", type=int)
 
     # Evaluation parameters
     parser.add_argument("--evaluate_every", default=100, help="Evaluate model after this many epochs", type=int)
@@ -214,4 +279,5 @@ if __name__ == '__main__':
 
     FLAGS = parser.parse_args()
 
-    tf.app.run()
+    main()
+    #tf.app.run()
