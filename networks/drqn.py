@@ -187,9 +187,9 @@ class DRQN(BaseNetwork):
 
         self.states_history.append(state)
 
-        states_op = self.session.graph.get_operation_by_name(f"states").outputs[0]
-        events_op = self.session.graph.get_operation_by_name(f"events_length").outputs[0]
-        q_op = self.session.graph.get_operation_by_name(f"eval_net/q/BiasAdd").outputs[0]
+        states_op = self.session.graph.get_operation_by_name("states").outputs[0]
+        events_op = self.session.graph.get_operation_by_name("events_length").outputs[0]
+        q_op = self.session.graph.get_operation_by_name("eval_net/q/BiasAdd").outputs[0]
 
         #input_state = np.expand_dims(state, axis=0)
         input_state = self.states_history[-self.trace_length:]

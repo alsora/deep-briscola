@@ -8,25 +8,25 @@ class BriscolaLogger:
         TEST = 3
 
 
-    def __init__(self, verbosity=None):
-        if not verbosity:
-            verbosity = self.LoggerLevels.TEST
+    def __init__(self, verbosity=3):
         self.configure_logger(verbosity)
 
 
     def configure_logger(self, verbosity):
 
-        if verbosity > self.LoggerLevels.DEBUG:
+        self.verbosity = verbosity
+
+        if self.verbosity > self.LoggerLevels.DEBUG:
             self.DEBUG = lambda *args: None
         else:
             self.DEBUG = print
 
-        if verbosity > self.LoggerLevels.PVP:
+        if self.verbosity > self.LoggerLevels.PVP:
             self.PVP = lambda *args: None
         else:
             self.PVP = print
 
-        if verbosity > self.LoggerLevels.TRAIN:
+        if self.verbosity > self.LoggerLevels.TRAIN:
             self.TRAIN = lambda *args: None
         else:
             self.TRAIN = print
@@ -48,6 +48,7 @@ class CardsOrder:
 class NetworkTypes:
     DQN = 'dqn'
     DRQN = 'drqn'
+    AC = 'actor_critic'
 
 class PlayerState:
     HAND_PLAYED_BRISCOLA = 'hand_played_briscola'

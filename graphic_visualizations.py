@@ -30,7 +30,7 @@ def stats_plotter(agents, points, total_wins, output_prefix = ''):
 
         if output_prefix:
             # if an output path is specified, save the plot
-            __plt.savefig(f"{output_prefix}_{agents[i].name}")
+            __plt.savefig(output_prefix + "_" + agents[i].name)
         else:
             # else show it
             __plt.show()
@@ -40,26 +40,26 @@ def stats_plotter(agents, points, total_wins, output_prefix = ''):
 def evaluate_summary(winners, points, agents, evaluation_dir):
     fig, ax = __plt.subplots(figsize=(12,8))
     __plt.bar([0,1], __np.asarray(winners)/sum(winners), edgecolor = 'blue', color = 'yellow')
-    __plt.ylim(0,1)          
+    __plt.ylim(0,1)
     __plt.xticks([0,1], [ag.name for ag in agents])
     __plt.ylabel("# of victories")
-    __plt.text(0.25, 0.1, f'STD points: {round(__np.std(points[0]),2)}', {"size" : 18},
+    __plt.text(0.25, 0.1, "STD points: " + str(round(__np.std(points[0]),2)), {"size" : 18},
                 horizontalalignment='center', color = 'black',
                 verticalalignment='center', transform=ax.transAxes,
-                bbox=dict(facecolor='cyan', alpha=0.4))                
-    __plt.text(0.75, 0.1,  f'STD points: {round(__np.std(points[1]),2)}', {"size" : 18}, 
+                bbox=dict(facecolor='cyan', alpha=0.4))
+    __plt.text(0.75, 0.1,  "STD points: " + str(round(__np.std(points[1]),2)), {"size" : 18},
                 horizontalalignment='center', color = 'black',
                 verticalalignment='center', transform=ax.transAxes,
-                bbox=dict(facecolor='cyan', alpha=0.4))                
-    __plt.text(0.25, 0.2, f'MEAN points: {round(__np.mean(points[0]),2)}', {"size" : 18}, 
+                bbox=dict(facecolor='cyan', alpha=0.4))
+    __plt.text(0.25, 0.2, "MEAN points: " + str(round(__np.mean(points[0]),2)), {"size" : 18},
                 horizontalalignment='center', color = 'black',
                 verticalalignment='center', transform=ax.transAxes,
-                bbox=dict(facecolor='cyan', alpha=0.4))                
-    __plt.text(0.75, 0.2,  f'MEAN points: {round(__np.mean(points[1]),2)}', {"size" : 18}, 
+                bbox=dict(facecolor='cyan', alpha=0.4))
+    __plt.text(0.75, 0.2,  "MEAN points: " + str(round(__np.mean(points[1]),2)), {"size" : 18},
                 horizontalalignment='center', color = 'black',
                 verticalalignment='center', transform=ax.transAxes,
-                bbox=dict(facecolor='cyan', alpha=0.4))       
-    __plt.title(evaluation_dir[evaluation_dir.find('/')+1:])         
+                bbox=dict(facecolor='cyan', alpha=0.4))
+    __plt.title(evaluation_dir[evaluation_dir.find('/')+1:])
     __plt.savefig(evaluation_dir)
     __plt.close()
 
@@ -67,7 +67,7 @@ def training_summary(x, vict_hist, point_hist, labels, FLAGS, evaluation_dir):
 
     fig, ax = __plt.subplots(2,1, figsize=(12,8), sharex=True)
     fig.subplots_adjust(hspace=0)
-    ax[0].set_title(f"Summary of {FLAGS.num_epochs} epochs", {'size' : 21})
+    ax[0].set_title("Summary of " + FLAGS.num_epochs + " epochs", {'size' : 21})
 
     y1 = __np.asarray(vict_hist).T[0]/FLAGS.num_evaluations
     y2 = __np.asarray(vict_hist).T[1]/FLAGS.num_evaluations
@@ -78,12 +78,12 @@ def training_summary(x, vict_hist, point_hist, labels, FLAGS, evaluation_dir):
     ax[0].hlines(__np.mean(y1),x[0],x[-1], alpha = 0.2, color = 'green')
     ax[0].hlines(__np.mean(y2),x[0],x[-1], alpha = 0.2, color = 'red')
     ax[0].legend()
-    
+
     y1 = __np.mean(__np.asarray(point_hist)[:,0,:],1)
     y2 = __np.mean(__np.asarray(point_hist)[:,1,:],1)
-    y3 = __np.std(__np.asarray(point_hist)[:,0,:],1) 
-    y4 = __np.std(__np.asarray(point_hist)[:,1,:],1) 
-    
+    y3 = __np.std(__np.asarray(point_hist)[:,0,:],1)
+    y4 = __np.std(__np.asarray(point_hist)[:,1,:],1)
+
     ax[1].plot(x, y1, linestyle ='--', label = labels[0], color = 'green')
     ax[1].plot(x, y2, linestyle ='--', label = labels[1], color = 'red')
 #    ax[1].scatter(x, y1, y3, label = labels[0]+' std', color = 'green')
@@ -93,7 +93,7 @@ def training_summary(x, vict_hist, point_hist, labels, FLAGS, evaluation_dir):
     ax[1].hlines(__np.mean(y1),x[0],x[-1], alpha = 0.2, color = 'green')
     ax[1].hlines(__np.mean(y2),x[0],x[-1], alpha = 0.2, color = 'red')
     ax[1].legend()
-    
+
     __plt.savefig(evaluation_dir)
     __plt.close()
 
@@ -144,6 +144,6 @@ def summ_vis_self_play(victory_rates_hist,
                        alpha = 0.8, linestyle='-.')
     __plt.ylabel('StandardDeviation', rotation=270, labelpad=15)
     __plt.legend()
-    __plt.savefig(f"{FLAGS.evaluation_dir}/last")
+    __plt.savefig(FLAGS.evaluation_dir + "/last")
     __plt.close()
 

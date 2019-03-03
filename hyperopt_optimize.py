@@ -3,6 +3,7 @@ import tensorflow as tf
 
 from agents.q_agent import QAgent
 from agents.random_agent import RandomAgent
+from agents.ai_agent import AIAgent
 import environment as brisc
 from train import train
 from utils import BriscolaLogger
@@ -19,6 +20,7 @@ space = {
     'replace_target_iter': hp.choice('replace_target_iter', [500, 1000, 2000])
 }
 
+NETWORK= NetworkTypes.DQN
 NUM_EPOCHS=30 * 1000
 EVALUATE_EVERY=5 * 1000
 EVALUATE_FOR=1000
@@ -41,7 +43,7 @@ def train_agent(hype_space):
         hype_space['epsilon_increment'],
         hype_space['epsilon_max'],
         hype_space['discount'],
-        NetworkTypes.DQN,
+        NETWORK,
         hype_space['layers'],
         hype_space['learning_rate'],
         hype_space['replace_target_iter'])

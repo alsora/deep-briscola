@@ -47,12 +47,12 @@ class CopyAgent(QAgent):
 
         # remove the temp directory after loading the model into the CopyAgent
         shutil.rmtree('__tmp_model_dir__')
-        
+
         self.name = "CopyAgent"
-        
+
         # A copy agent must always be greedy since it is not learning
         self.make_greedy()
-        
+
 
     def update(self, *args):
         pass
@@ -67,19 +67,19 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
     best_total_wins = -1
     for epoch in range(1, num_epochs + 1):
         gv.printProgressBar(epoch, num_epochs,
-                            prefix = f'Epoch: {epoch}',
+                            prefix = "Epoch: " + str(epoch),
                             length= 50)
 
         for a in [agent1,agent2]:
             other = 0 if a == agent2 else 1
-            
-            
+
+
             # picking an agent from the past as adversary
             agents = [a, random.choice(old_agents[other])]
-    
+
             # Play a briscola game to train the agent
             brisc.play_episode(game, agents)
-    
+
         # Evaluation step
         if epoch % evaluate_every == 0:
 
@@ -95,15 +95,15 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
             agents = [agent1,agent2]
             winners, points = evaluate(game, agents, num_evaluations)
             gv.evaluate_summary(winners, points, agents, evaluation_dir+
-                f'/epoch:{epoch} {agents[0].name}1 vs {agents[1].name}2')              
+                "/epoch:" + str(epoch) + " " + agents[0].name + "1 vs " + agents[1].name + "2")
             victory_history_1v2.append(winners)
             points_history_1v2.append(points)
-            
+
             # Evaluation against random agent
             agents = [agent1,RandomAgent()]
             winners, points = evaluate(game, agents, num_evaluations)
             gv.evaluate_summary(winners, points, agents, evaluation_dir+
-                f'/epoch:{epoch} {agents[0].name}1 vs {agents[1].name}')              
+                "/epoch:" + str(epoch) + " " + agents[0].name + "1 vs " + agents[1].name)
             victory_history_1vR.append(winners)
             points_history_1vR.append(points)
             # Saving the model if the agent performs better against random agent
@@ -115,9 +115,9 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
             agents = [agent2,RandomAgent()]
             winners, points = evaluate(game, agents, num_evaluations)
             gv.evaluate_summary(winners, points, agents, evaluation_dir+
-                f'/epoch:{epoch} {agents[0].name}2 vs {agents[1].name}')              
+                "/epoch:" + str(epoch) + " " + agents[0].name + "2 vs " + agents[1].name)
             victory_history_2vR.append(winners)
-            points_history_2vR.append(points)                
+            points_history_2vR.append(points)
             # Saving the model if the agent performs better against random agent
             if winners[0] > best_total_wins:
                 best_total_wins = winners[0]
@@ -127,16 +127,16 @@ def self_train(game, agent1, agent2, num_epochs, evaluate_every, num_evaluations
             for ag in [agent1,agent2]:
                 ag.restore_epsilon()
 
-                
+
         if epoch % copy_every == 0:
-            
+
             old_agents[other].append(CopyAgent(a))
 
             # Eliminating the oldest agent if maximum number of agents
             if len(old_agents) > FLAGS.max_old_agents:
-                old_agents.pop(0)                
-                
-                
+                old_agents.pop(0)
+
+
 
     return best_total_wins
 
@@ -146,20 +146,20 @@ def main(argv=None):
 
     global victory_history_1v2
     victory_history_1v2  = []
-    
+
     global victory_history_1vR
     victory_history_1vR  = []
-    
+
     global victory_history_2vR
     victory_history_2vR  = []
 
 
     global points_history_1v2
     points_history_1v2  = []
-    
+
     global points_history_1vR
     points_history_1vR  = []
-    
+
     global points_history_2vR
     points_history_2vR  = []
 
@@ -171,7 +171,7 @@ def main(argv=None):
 
     # Initialize agent
     global agent1
-    agent1 = QAgent(        
+    agent1 = QAgent(
         FLAGS.epsilon,
         FLAGS.epsilon_increment,
         FLAGS.epsilon_max,
@@ -183,7 +183,7 @@ def main(argv=None):
         FLAGS.batch_size
      )
     global agent2
-    agent2 = QAgent(        
+    agent2 = QAgent(
         FLAGS.epsilon,
         FLAGS.epsilon_increment,
         FLAGS.epsilon_max,
@@ -205,7 +205,7 @@ def main(argv=None):
                                     FLAGS.model_dir)
     print('Best winning ratio : {:.2%}'.format(best_total_wins/FLAGS.num_evaluations))
     print(time.time()-start_time)
-    
+
     # Summary graphs
     x = [FLAGS.evaluate_every*i for i in range(1,1+len(victory_history_1v2))]
 
@@ -214,30 +214,30 @@ def main(argv=None):
     point_hist = points_history_1v2
     labels = [agent1.name+'1', agent2.name+'2']
     gv.training_summary(x, vict_hist, point_hist, labels, FLAGS, "evaluation_dir/1v2")
-    
+
     # 1vRandom
     vict_hist = victory_history_1vR
     point_hist = points_history_1vR
     labels = [agent1.name+'1', RandomAgent().name]
     gv.training_summary(x, vict_hist, point_hist, labels, FLAGS, "evaluation_dir/1vR")
-    
+
     # 2vRandom
     vict_hist = victory_history_2vR
     point_hist = points_history_2vR
     labels = [agent2.name+'2', RandomAgent().name]
     gv.training_summary(x, vict_hist, point_hist, labels, FLAGS, "evaluation_dir/2vR")
-    
-    
+
+
      # Evaluation against ai agent
     agents = [agent1,AIAgent()]
     winners, points = evaluate(game, agents, FLAGS.num_evaluations)
-    gv.evaluate_summary(winners, points, agents, 'evaluation_dir'+
-        f'/{agents[0].name}1 vs {agents[1].name}')              
-    
+    gv.evaluate_summary(winners, points, agents, "evaluation_dir/"+
+        agents[0].name + "1 vs " + agents[1].name)
+
     agents = [agent2,AIAgent()]
     winners, points = evaluate(game, agents, FLAGS.num_evaluations)
-    gv.evaluate_summary(winners, points, agents, 'evaluation_dir'+
-        f'/{agents[0].name}2 vs {agents[1].name}')            
+    gv.evaluate_summary(winners, points, agents, "evaluation_dir/"+
+        {agents[0].name} + "2 vs " + agents[1].name)
 
 
 
