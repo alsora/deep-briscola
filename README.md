@@ -13,14 +13,52 @@ This repository contains a Briscola game environment where different agents can 
  - `HumanAgent`: yourself
 
 
-## Train a model
+## Dependencies
+
+ - tensorflow
+ - hyperopt
+ - pandas
+ - matplotlib
+
+A Dockerfile with all the dependencies installed is provided in this repo.
+To use it:
+
+```
+$ bash docker/build.sh
+$ bash docker/run.sh
+```
+
+## Usage
+
+##### Train a model
 
     $ python train.py --saved_model saved_model_dir
 
-## Play against AI Agent
+##### Play against trained deep agent
+
+    $ python human_vs_ai.py --saved_model saved_model_dir
+
+##### Play against AI Agent
 
     $ python human_vs_ai.py
 
-## Play against trained deep agent
 
-    $ python human_vs_ai.py --saved_model saved_model_dir
+## Features
+
+##### Different networks implemented
+
+Specify the network type using `--network` command line argument
+
+ - Deep Q Network
+ - Deep Recurrent Q Network
+ - WIP Synchronous Advantage Actor Critic (A2C)
+
+##### Self Play
+
+Train multiple agents using the `self_train.py` python script.
+
+## Results
+
+ - Training a Deep Q Network model for 75k epochs: achieved 85% winrate against a random player.
+
+ - Training a Deep Q Network model for 100k epochs using Self Play: achieved 90% winrate against a random player.
