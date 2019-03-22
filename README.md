@@ -15,13 +15,23 @@ This repository contains a Briscola game environment where different agents can 
 
 ## Dependencies
 
- - tensorflow
- - hyperopt
- - pandas
- - matplotlib
+```
+sudo apt-get update && sudo apt-get install -y \
+  python-dev \
+  python3-pip
+  
+sudo pip install \
+  tensorflow \
+  hyperopt \
+  matplotlib \
+  pandas
 
-A Dockerfile with all the dependencies installed is provided in this repo.
+```
+
+Alternatively, a Dockerfile with all the dependencies installed is provided in this repo.
 To use it:
+
+[Install Docker on Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
 
 ```
 $ bash docker/build.sh
@@ -32,15 +42,15 @@ $ bash docker/run.sh
 
 ##### Train a model
 
-    $ python train.py --saved_model saved_model_dir
+    $ python3 train.py --saved_model saved_model_dir
 
 ##### Play against trained deep agent
 
-    $ python human_vs_ai.py --saved_model saved_model_dir
+    $ python3 human_vs_ai.py --saved_model saved_model_dir
 
 ##### Play against AI Agent
 
-    $ python human_vs_ai.py
+    $ python3 human_vs_ai.py
 
 
 ## Features
