@@ -7,6 +7,7 @@ import itertools, time, random, os, shutil
 
 from networks.dqn import DQN
 from networks.drqn import DRQN
+from networks.actor_critic import AC
 from utils import NetworkTypes
 
 class QAgent():
@@ -34,6 +35,8 @@ class QAgent():
             self.q_learning = DQN(self.n_actions, self.n_features, layers, learning_rate, batch_size, replace_target_iter, discount)
         elif network == NetworkTypes.DRQN:
             self.q_learning = DRQN(self.n_actions, self.n_features, layers, learning_rate, batch_size, replace_target_iter, discount)
+        elif network == NetworkTypes.AC:
+            self.q_learning = AC(self.n_actions, self.n_features, layers, learning_rate, batch_size, replace_target_iter, discount)
         else:
             raise ValueError("Not implemented type of network passed to QAgent")
 
@@ -68,10 +71,27 @@ class QAgent():
         seed_index = 4 * 14 + 10 + game.briscola.seed
         state[seed_index] = 1
         # add seen cards
-        #for card in game.history:
+        #visible_cards = game.history + player.hand
+        #for i, card in enumerate(visible_cards):
             #card_index = 5 * 14 + card.id
             #state[card_index] = 1
 
+
+        '''
+        for i, card in enumerate(player.hand):
+            card_index = i * 40 + card.id
+            state[card_index] = 1
+        for i, card in enumerate(game.played_cards):
+            card_index = (i+3) * 40 + card.id
+            state[card_index] = 1
+        card_index = 4 * 40 + game.briscola.id
+        state[card_index] = 1
+
+        visible_cards = game.history + player.hand
+        for i, card in enumerate(visible_cards):
+            card_index = 5 * 40 + card.id
+            state[card_index] = 1
+        '''
 
         self.last_state = self.state
         self.state = state

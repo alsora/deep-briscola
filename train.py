@@ -88,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument("--discount", default=0.85, help="How much a reward is discounted after each step", type=float)
 
     # Network parameters
-    parser.add_argument("--network", default=NetworkTypes.DRQN, choices=[NetworkTypes.DQN, NetworkTypes.DRQN], help="Neural Network used for approximating value function")
+    parser.add_argument("--network", default=NetworkTypes.AC, choices=[NetworkTypes.DQN, NetworkTypes.DRQN, NetworkTypes.AC], help="Neural Network used for approximating value function")
     parser.add_argument('--layers', default=[256, 128], help="Definition of layers for the chosen network", type=int, nargs='+')
     parser.add_argument("--learning_rate", default=1e-4, help="Learning rate for the network updates", type=float)
     parser.add_argument("--replace_target_iter", default=2000, help="Number of update steps before copying evaluation weights into target network", type=int)
