@@ -13,7 +13,10 @@ class RandomAgent:
     def select_action(self, actions):
         return np.random.choice(actions)
 
-    def update(self, reward):
+    def store_experience(self, reward):
+        pass
+
+    def train(self):
         pass
 
     def make_greedy(self):

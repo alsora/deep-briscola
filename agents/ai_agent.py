@@ -10,8 +10,9 @@ class AIAgent:
         self.name = 'AIAgent'
 
 
-    def observe(self, game, player):
+    def observe(self, game, player_id):
         ''' store information about the state of the game to be used in the decisional process'''
+        player = game.players[player_id]
         self.hand = player.hand
         self.points = player.points
         self.played_cards = game.played_cards
@@ -99,7 +100,7 @@ class AIAgent:
             return weakest_index
 
 
-    def update(self, reward):
+    def store_experience(self, reward):
         pass
 
 

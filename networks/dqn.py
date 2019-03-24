@@ -162,8 +162,6 @@ class DQN(BaseNetwork):
     def learn(self, last_state, action, reward, state, terminal):
         ''' Sample from memory and train neural network on a batch of experiences '''
 
-        self.store(last_state, action, reward, state, terminal)
-
         # check if it's time to update the network
         self.learn_step_counter += 1
         if self.learn_step_counter % self.update_each != 0 or self.learn_step_counter < self.update_after:

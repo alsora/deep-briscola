@@ -38,15 +38,14 @@ class QAgent():
             raise ValueError("Not implemented type of network passed to QAgent")
 
 
-    def observe(self, game, player):
+    def observe(self, game, player_id):
         ''' create an encoded state representation of the game to be fed into the neural network
             the state is composed of 5 cards (3 in hand, 1 played card on table, 1 briscola)
             each card is array of size 14, separating one hot encoded number and seed i.e. [number_one_hot, seed_one_hot]
             if there are no cards at a particular location, the array is all zeros.
         '''
 
-        # Reordering the player hand in descending order (high value -> low value)
-        #game.reorder_hand(player.id)
+        player = game.players[player_id]
 
         state = np.zeros(self.n_features)
         # add hand to state
@@ -106,7 +105,7 @@ class QAgent():
         return action
 
 
-    def update(self, reward):
+    def store_experience(self, reward):
         ''' After receiving a reward the agent has all collected [s, a, r, s_]'''
 
         '''
@@ -120,6 +119,11 @@ class QAgent():
 
         # update last reward
         self.reward = reward
+
+        self.q_learning.store(self.last_state, self.action, self.reward, self.state, self.terminal)
+
+
+    def train(self):
 
         # update epsilon grediness
         if self.epsilon < self.epsilon_max:

@@ -6,7 +6,8 @@ class HumanAgent:
     def __init__(self):
         self.name = 'HumanAgent'
 
-    def observe(self, game, player):
+    def observe(self, game, player_id):
+        player = game.players[player_id]
         self.hand = player.hand
         self.briscola = game.briscola
         self.played_cards = game.played_cards
@@ -33,7 +34,7 @@ class HumanAgent:
         return action
 
 
-    def update(self, reward):
+    def store_experience(self, reward):
         pass
 
     def make_greedy(self):

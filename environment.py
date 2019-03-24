@@ -193,7 +193,6 @@ class BriscolaGame:
             player.draw(self.deck)
 
 
-
     def play_step(self, action, player_id):
         ''' a player executes a chosen action'''
 
@@ -217,14 +216,14 @@ class BriscolaGame:
 
         winner_player_id, points = self.evaluate_step()
 
-        rewards = []
+        rewards = [0] * self.num_players
         for player_id in self.get_players_order():
-            player = self.players[player_id]
+            #player = self.players[player_id]
 
-            reward = points if player_id is winner_player_id else -points
-            #reward = points if player_id is winner_player_id else 0
+            r = points if player_id is winner_player_id else -points
+            #r = points if player_id is winner_player_id else 0
 
-            rewards.append(reward)
+            rewards[player_id] = r
 
         return rewards
 
@@ -348,15 +347,14 @@ def play_episode(game, agents, train=True):
 
         # action step
         players_order = game.get_players_order()
-        for i, player_id in enumerate(players_order):
+        for player_id in players_order:
 
-            player = game.players[player_id]
             agent = agents[player_id]
             # agent observes state before acting
-            agent.observe(game, player)
+            agent.observe(game, player_id)
 
             if train and rewards:
-                agent.update(rewards[i])
+                agent.store_experience(rewards[player_id])
 
             available_actions = game.get_player_actions(player_id)
             action = agent.select_action(available_actions)
@@ -370,12 +368,16 @@ def play_episode(game, agents, train=True):
 
     # TODO: this is ugly
     # observe terminal state
-    for i, player_id in enumerate(players_order):
-        player = game.players[player_id]
+    for player_id in players_order:
         agent = agents[player_id]
         # agent observes state before acting
-        agent.observe(game, player)
+        agent.observe(game, player_id)
         if train and rewards:
-            agent.update(rewards[i])
+            agent.store_experience(rewards[player_id])
+    
+    # train at the end of an episode
+    if train:
+        for a in agents:
+            a.train()
 
     return game.end_game()
