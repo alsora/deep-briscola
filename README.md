@@ -42,11 +42,11 @@ $ bash docker/run.sh
 
 ##### Train a model
 
-    $ python3 train.py --saved_model saved_model_dir
+    $ python3 train.py --network dqn --saved_model saved_model_dir
 
 ##### Play against trained deep agent
 
-    $ python3 human_vs_ai.py --saved_model saved_model_dir
+    $ python3 human_vs_ai.py --network dqn --saved_model saved_model_dir
 
 ##### Play against AI Agent
 
@@ -66,6 +66,8 @@ Specify the network type using `--network` command line argument
 ##### Self Play
 
 Train multiple agents using the `self_train.py` python script.
+
+    $ python3 self_train.py --network dqn --saved_model saved_model_dir
 
 ## Results
 
