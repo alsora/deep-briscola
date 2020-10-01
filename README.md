@@ -1,4 +1,4 @@
-# deep-briscola
+# deep-briscola an amazing project
 
 Tensorflow deep reinforcement learning agent playing Briscola card game.
 
